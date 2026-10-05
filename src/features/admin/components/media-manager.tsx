@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useCallback, useRef, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -9,23 +9,40 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, ArrowRight, GripVertical, Loader2, Star, Trash2, Upload } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ResponsiveImage } from '@/components/media/responsive-image';
-import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES, type MediaVariant } from '@/lib/domain/media';
-import { cn } from '@/lib/utils';
-import { attachMedia, deleteMedia, reorderMedia, requestUpload } from '@/features/media/actions';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  ArrowLeft,
+  ArrowRight,
+  GripVertical,
+  Loader2,
+  Star,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ResponsiveImage } from "@/components/media/responsive-image";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  MAX_UPLOAD_BYTES,
+  type MediaVariant,
+} from "@/lib/domain/media";
+import { cn } from "@/lib/utils";
+import {
+  attachMedia,
+  deleteMedia,
+  reorderMedia,
+  requestUpload,
+} from "@/features/media/actions";
 
 export type ManagedPhoto = {
   readonly id: string;
@@ -50,7 +67,7 @@ export function MediaManager({
   listingId: string;
   initialPhotos: readonly ManagedPhoto[];
 }) {
-  const t = useTranslations('admin');
+  const t = useTranslations("admin");
   const [photos, setPhotos] = useState<ManagedPhoto[]>([...initialPhotos]);
   const [uploading, setUploading] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -59,13 +76,18 @@ export function MediaManager({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const persistOrder = useCallback(
     (ordered: ManagedPhoto[]) => {
       startTransition(async () => {
-        await reorderMedia({ listingId, orderedIds: ordered.map((photo) => photo.id) });
+        await reorderMedia({
+          listingId,
+          orderedIds: ordered.map((photo) => photo.id),
+        });
       });
     },
     [listingId],
@@ -96,13 +118,20 @@ export function MediaManager({
     if (!files || files.length === 0) return;
     setError(null);
 
+    let attachedCount = 0;
+    const failures: string[] = [];
+
     for (const file of Array.from(files)) {
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
-        setError(`${file.name}: unsupported type`);
+      if (
+        !ACCEPTED_IMAGE_TYPES.includes(
+          file.type as (typeof ACCEPTED_IMAGE_TYPES)[number],
+        )
+      ) {
+        failures.push(`${file.name}: unsupported type`);
         continue;
       }
       if (file.size > MAX_UPLOAD_BYTES) {
-        setError(`${file.name}: too large`);
+        failures.push(`${file.name}: too large`);
         continue;
       }
 
@@ -115,45 +144,56 @@ export function MediaManager({
         });
 
         if (!ticket?.data?.ok) {
-          setError(t('media.uploading'));
+          failures.push(`${file.name}: ${t("media.uploading")}`);
           continue;
         }
 
         // The bytes go straight to storage; the server only ever sees the key.
         const response = await fetch(ticket.data.data.url, {
-          method: 'PUT',
+          method: "PUT",
           headers: ticket.data.data.headers,
           body: file,
         });
 
         if (!response.ok) {
-          setError(`${file.name}: upload failed`);
+          failures.push(`${file.name}: upload failed`);
           continue;
         }
 
         const attached = await attachMedia({
           listingId,
           uploadKey: ticket.data.data.uploadKey,
-          kind: 'photo',
+          kind: "photo",
         });
 
         if (attached?.data?.ok) {
-          // The derivatives are generated server-side, so the page is refreshed
-          // rather than optimistically patched with data we do not have.
-          window.location.reload();
+          attachedCount += 1;
         } else {
-          setError(`${file.name}: processing failed`);
+          failures.push(`${file.name}: processing failed`);
         }
       } finally {
         setUploading((count) => count - 1);
       }
     }
+
+    if (inputRef.current) inputRef.current.value = "";
+
+    if (failures.length > 0) {
+      setError(failures.join(" · "));
+    }
+
+    // Reload once after the whole batch — reloading after the first file used to
+    // abort multi-select uploads mid-loop.
+    if (attachedCount > 0) {
+      window.location.reload();
+    }
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t('media.deleteConfirm'))) return;
+    if (!window.confirm(t("media.deleteConfirm"))) return;
     const result = await deleteMedia({ id });
-    if (result?.data?.ok) setPhotos((current) => current.filter((photo) => photo.id !== id));
+    if (result?.data?.ok)
+      setPhotos((current) => current.filter((photo) => photo.id !== id));
   }
 
   return (
@@ -167,12 +207,16 @@ export function MediaManager({
         className="rounded-card border-2 border-dashed border-line-strong bg-surface-muted p-8 text-center"
       >
         <Upload className="mx-auto size-6 text-ink-subtle" aria-hidden="true" />
-        <p className="mt-3 text-sm font-medium text-ink">{t('media.dropzone')}</p>
-        <p className="mt-1 text-xs text-ink-subtle">{t('media.dropzoneHint')}</p>
+        <p className="mt-3 text-sm font-medium text-ink">
+          {t("media.dropzone")}
+        </p>
+        <p className="mt-1 text-xs text-ink-subtle">
+          {t("media.dropzoneHint")}
+        </p>
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPTED_IMAGE_TYPES.join(',')}
+          accept={ACCEPTED_IMAGE_TYPES.join(",")}
           multiple
           className="sr-only"
           onChange={(event) => void uploadFiles(event.target.files)}
@@ -186,26 +230,32 @@ export function MediaManager({
           disabled={uploading > 0}
         >
           {uploading > 0 ? <Loader2 className="animate-spin" /> : <Upload />}
-          {uploading > 0 ? t('media.processing') : t('media.dropzone')}
+          {uploading > 0 ? t("media.processing") : t("media.dropzone")}
         </Button>
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p
+          role="alert"
+          className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
           {error}
         </p>
       ) : null}
 
       {photos.length > 0 ? (
         <>
-          <p className="text-xs text-ink-subtle">{t('media.reorderHint')}</p>
+          <p className="text-xs text-ink-subtle">{t("media.reorderHint")}</p>
           <DndContext
             id={`listing-media-${listingId}`}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={onDragEnd}
           >
-            <SortableContext items={photos.map((photo) => photo.id)} strategy={rectSortingStrategy}>
+            <SortableContext
+              items={photos.map((photo) => photo.id)}
+              strategy={rectSortingStrategy}
+            >
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {photos.map((photo, index) => (
                   <SortablePhoto
@@ -213,10 +263,10 @@ export function MediaManager({
                     photo={photo}
                     index={index}
                     isCover={index === 0}
-                    coverLabel={t('media.cover')}
-                    moveUpLabel={t('media.moveUp')}
-                    moveDownLabel={t('media.moveDown')}
-                    deleteLabel={t('media.deleteConfirm')}
+                    coverLabel={t("media.cover")}
+                    moveUpLabel={t("media.moveUp")}
+                    moveDownLabel={t("media.moveDown")}
+                    deleteLabel={t("media.deleteConfirm")}
                     onMove={move}
                     onRemove={remove}
                   />
@@ -251,7 +301,14 @@ function SortablePhoto({
   onMove: (from: number, to: number) => void;
   onRemove: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: photo.id,
   });
 
@@ -260,8 +317,8 @@ function SortablePhoto({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'group relative overflow-hidden rounded-card border border-line bg-surface',
-        isDragging && 'z-10 opacity-80 shadow-pop',
+        "group relative overflow-hidden rounded-card border border-line bg-surface",
+        isDragging && "z-10 opacity-80 shadow-pop",
       )}
     >
       <ResponsiveImage

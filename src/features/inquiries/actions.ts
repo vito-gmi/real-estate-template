@@ -1,12 +1,17 @@
-'use server';
+"use server";
 
-import { headers } from 'next/headers';
-import { siteConfig } from '@/config/site';
-import { actionClient, actionErr, actionOk, type ActionResult } from '@/lib/safe-action';
-import { mailer } from '@/server/adapters/mail';
-import { checkRateLimit, clientIp, hashIp } from '@/server/rate-limit';
-import { createInquiry } from '@/server/repositories/inquiries';
-import { inquirySchema, type InquiryValues } from './schema';
+import { headers } from "next/headers";
+import { siteConfig } from "@/config/site";
+import {
+  actionClient,
+  actionErr,
+  actionOk,
+  type ActionResult,
+} from "@/lib/safe-action";
+import { mailer } from "@/server/adapters/mail";
+import { checkRateLimit, clientIp, hashIp } from "@/server/rate-limit";
+import { createInquiry } from "@/server/repositories/inquiries";
+import { inquirySchema, type InquiryValues } from "./schema";
 
 /**
  * Lead capture.
@@ -18,26 +23,29 @@ import { inquirySchema, type InquiryValues } from './schema';
  * provider outage should never lose an enquiry the visitor believes was sent.
  */
 export const submitInquiry = actionClient
-  .metadata({ name: 'submitInquiry' })
+  .metadata({ name: "submitInquiry" })
   .inputSchema(inquirySchema)
   .action(async ({ parsedInput }): Promise<ActionResult<{ id: string }>> => {
     const values = parsedInput as InquiryValues;
 
     if (values.website) {
       // Silently accept so the bot has nothing to learn from the response.
-      return actionOk({ id: 'discarded' });
+      return actionOk({ id: "discarded" });
     }
 
     const ip = await clientIp();
 
     const [byIp, byEmail] = await Promise.all([
-      checkRateLimit('inquiry:ip', hashIp(ip)),
-      checkRateLimit('inquiry:email', values.email.toLowerCase()),
+      checkRateLimit("inquiry:ip", hashIp(ip)),
+      checkRateLimit("inquiry:email", values.email.toLowerCase()),
     ]);
 
     if (!byIp.success || !byEmail.success) {
-      return actionErr('rate_limited', 'errors.rateLimited', {
-        retryAfterSeconds: Math.max(byIp.retryAfterSeconds, byEmail.retryAfterSeconds),
+      return actionErr("rate_limited", "errors.rateLimited", {
+        retryAfterSeconds: Math.max(
+          byIp.retryAfterSeconds,
+          byEmail.retryAfterSeconds,
+        ),
       });
     }
 
@@ -51,9 +59,9 @@ export const submitInquiry = actionClient
       phone: values.phone || null,
       message: values.message,
       locale: values.locale,
-      source: values.listingId ? 'listing' : 'contact',
+      source: values.listingId ? "listing" : "contact",
       ipHash: hashIp(ip),
-      userAgent: headerList.get('user-agent')?.slice(0, 300) ?? null,
+      userAgent: headerList.get("user-agent")?.slice(0, 300) ?? null,
     });
 
     const recipient = siteConfig.contact.email;
@@ -63,22 +71,24 @@ export const submitInquiry = actionClient
         replyTo: values.email,
         subject: values.listingId
           ? `New enquiry · listing ${values.listingId.slice(0, 8)}`
-          : 'New enquiry · contact form',
+          : "New enquiry · contact form",
         text: [
           `Name: ${values.name}`,
           `Email: ${values.email}`,
           values.phone ? `Phone: ${values.phone}` : null,
           `Type: ${values.kind}`,
-          values.listingId ? `Listing: ${siteConfig.url}/admin/listings/${values.listingId}` : null,
-          '',
-          values.message || '(no message)',
+          values.listingId
+            ? `Listing: ${siteConfig.url}/admin/listings/${values.listingId}`
+            : null,
+          "",
+          values.message || "(no message)",
         ]
           .filter(Boolean)
-          .join('\n'),
+          .join("\n"),
       });
     } catch (error) {
       // The lead is already safe in the database and visible in the inbox.
-      console.error('[submitInquiry] notification failed', error);
+      console.error("[submitInquiry] notification failed", error);
     }
 
     return actionOk({ id });

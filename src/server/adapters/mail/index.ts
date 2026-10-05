@@ -1,15 +1,19 @@
-import { Resend } from 'resend';
-import { serverEnv } from '@/env';
-import type { MailAdapter, MailMessage } from './types';
+import { Resend } from "resend";
+import { serverEnv } from "@/env";
+import type { MailAdapter, MailMessage } from "./types";
 
 function createConsoleMailer(): MailAdapter {
   return {
-    name: 'console',
+    name: "console",
     async send(message) {
       console.info(
-        ['— email —', `to: ${[message.to].flat().join(', ')}`, `subject: ${message.subject}`, message.text, '—'].join(
-          '\n',
-        ),
+        [
+          "— email —",
+          `to: ${[message.to].flat().join(", ")}`,
+          `subject: ${message.subject}`,
+          message.text,
+          "—",
+        ].join("\n"),
       );
     },
   };
@@ -17,11 +21,13 @@ function createConsoleMailer(): MailAdapter {
 
 function createResendMailer(): MailAdapter {
   const apiKey = serverEnv.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY is required when MAIL_DRIVER is "resend".');
+  if (!apiKey)
+    throw new Error('RESEND_API_KEY is required when MAIL_DRIVER is "resend".');
+
   const client = new Resend(apiKey);
 
   return {
-    name: 'resend',
+    name: "resend",
     async send(message: MailMessage) {
       const { error } = await client.emails.send({
         from: serverEnv.MAIL_FROM,
@@ -31,7 +37,9 @@ function createResendMailer(): MailAdapter {
         ...(message.html ? { html: message.html } : {}),
         ...(message.replyTo ? { replyTo: message.replyTo } : {}),
       });
-      if (error) throw new Error(`Resend rejected the message: ${error.message}`);
+
+      if (error)
+        throw new Error(`Resend rejected the message: ${error.message}`);
     },
   };
 }
@@ -40,9 +48,12 @@ let instance: MailAdapter | undefined;
 
 export function mailer(): MailAdapter {
   if (!instance) {
-    instance = serverEnv.MAIL_DRIVER === 'resend' ? createResendMailer() : createConsoleMailer();
+    instance =
+      serverEnv.MAIL_DRIVER === "resend"
+        ? createResendMailer()
+        : createConsoleMailer();
   }
   return instance;
 }
 
-export type { MailAdapter, MailMessage } from './types';
+export type { MailAdapter, MailMessage } from "./types";

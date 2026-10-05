@@ -1,4 +1,4 @@
-import { clientEnv } from '@/env';
+import { clientEnv } from "@/env";
 
 /**
  * Content-Security-Policy construction.
@@ -28,11 +28,12 @@ import { clientEnv } from '@/env';
  *   escalation paths that matter most.
  */
 
-export type CspProfile = 'static' | 'nonce';
+export type CspProfile = "static" | "nonce";
 
 function mediaOrigin(): string | null {
   const base = clientEnv.NEXT_PUBLIC_MEDIA_BASE_URL;
-  if (!base.startsWith('http')) return null;
+  if (!base.startsWith("http")) return null;
+
   return new URL(base).origin;
 }
 
@@ -40,13 +41,53 @@ function mapOrigin(): string {
   return new URL(clientEnv.NEXT_PUBLIC_MAP_STYLE_URL).origin;
 }
 
+/**
+ * Origins the browser may PUT to for direct (presigned) uploads.
+ *
+ * Public media (`NEXT_PUBLIC_MEDIA_BASE_URL`, e.g. `*.r2.dev`) is for GETs.
+ * Presigned PutObject URLs use the S3 API host — for R2 that is
+ * `*.r2.cloudflarestorage.com`, often as `bucket.<account>.r2.cloudflarestorage.com`,
+ * which is a different origin from both the account endpoint and the public URL.
+ *
+ * Read env via static `process.env.*` keys (not `serverEnv`) so the Edge proxy
+ * bundle includes them. Server Actions run on Node and already see the full env;
+ * without this, CSP is emitted without the upload host while signed URLs still work.
+ */
+function storageUploadOrigins(): string[] {
+  const endpoint = process.env.S3_ENDPOINT;
+  const driver = process.env.STORAGE_DRIVER;
+  const mediaBase = clientEnv.NEXT_PUBLIC_MEDIA_BASE_URL;
+  const origins = new Set<string>();
+
+  if (endpoint) {
+    try {
+      origins.add(new URL(endpoint).origin);
+    } catch {
+      // Ignore malformed endpoint; the R2 wildcard below still covers uploads.
+    }
+  }
+
+  const usesR2 =
+    driver === "s3" ||
+    Boolean(endpoint?.includes("r2.cloudflarestorage.com")) ||
+    mediaBase.includes("r2.dev") ||
+    mediaBase.includes("r2.cloudflarestorage.com");
+
+  if (usesR2) {
+    origins.add("https://*.r2.cloudflarestorage.com");
+  }
+
+  return [...origins];
+}
+
 export function buildCsp(profile: CspProfile, nonce?: string): string {
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV === "development";
   const media = mediaOrigin();
   const map = mapOrigin();
+  const uploadOrigins = storageUploadOrigins();
 
   const scriptSrc =
-    profile === 'nonce' && nonce
+    profile === "nonce" && nonce
       ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"]
       : ["'self'", "'unsafe-inline'"];
 
@@ -56,41 +97,48 @@ export function buildCsp(profile: CspProfile, nonce?: string): string {
   }
 
   const directives: Record<string, string[]> = {
-    'default-src': ["'self'"],
-    'script-src': scriptSrc,
+    "default-src": ["'self'"],
+    "script-src": scriptSrc,
     // Next.js and MapLibre both inject inline style attributes. Style injection
     // is not an XSS vector on its own, so this is the pragmatic trade-off.
-    'style-src': ["'self'", "'unsafe-inline'"],
+    "style-src": ["'self'", "'unsafe-inline'"],
     // Sprites and Natural Earth rasters are fetched as images; vector tiles use connect-src.
-    'img-src': [
+    "img-src": [
       "'self'",
-      'data:',
-      'blob:',
+      "data:",
+      "blob:",
       map,
-      'https://*.openfreemap.org',
+      "https://*.openfreemap.org",
       ...(media ? [media] : []),
     ],
-    'font-src': ["'self'", 'data:'],
-    'connect-src': [
+    "font-src": ["'self'", "data:"],
+    "connect-src": [
       "'self'",
       map,
-      'https://*.openfreemap.org',
-      'https://*.ingest.sentry.io',
-      'https://*.sentry.io',
+      "https://*.openfreemap.org",
+      "https://*.ingest.sentry.io",
+      "https://*.sentry.io",
       ...(media ? [media] : []),
+      ...uploadOrigins,
     ],
-    'worker-src': ["'self'", 'blob:'],
-    'frame-src': ["'self'", 'https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
-    'media-src': ["'self'", ...(media ? [media] : [])],
-    'object-src': ["'none'"],
-    'base-uri': ["'self'"],
-    'form-action': ["'self'"],
-    'frame-ancestors': ["'none'"],
+    "worker-src": ["'self'", "blob:"],
+    "frame-src": [
+      "'self'",
+      "https://www.youtube-nocookie.com",
+      "https://player.vimeo.com",
+    ],
+    "media-src": ["'self'", ...(media ? [media] : [])],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "frame-ancestors": ["'none'"],
   };
 
   const serialized = Object.entries(directives)
-    .map(([directive, values]) => `${directive} ${[...new Set(values)].join(' ')}`)
-    .join('; ');
+    .map(
+      ([directive, values]) => `${directive} ${[...new Set(values)].join(" ")}`,
+    )
+    .join("; ");
 
   return isDev ? serialized : `${serialized}; upgrade-insecure-requests`;
 }
@@ -100,16 +148,19 @@ export function buildCsp(profile: CspProfile, nonce?: string): string {
  * `next.config.ts` so that all security headers live in one file.
  */
 export const staticSecurityHeaders: ReadonlyArray<readonly [string, string]> = [
-  ['X-Content-Type-Options', 'nosniff'],
-  ['Referrer-Policy', 'strict-origin-when-cross-origin'],
-  ['X-Frame-Options', 'DENY'],
-  ['X-DNS-Prefetch-Control', 'on'],
+  ["X-Content-Type-Options", "nosniff"],
+  ["Referrer-Policy", "strict-origin-when-cross-origin"],
+  ["X-Frame-Options", "DENY"],
+  ["X-DNS-Prefetch-Control", "on"],
   [
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()',
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()",
   ],
-  ['Cross-Origin-Opener-Policy', 'same-origin'],
+  ["Cross-Origin-Opener-Policy", "same-origin"],
 ];
 
 /** HSTS is only meaningful over TLS, so it is applied outside development. */
-export const hstsHeader = ['Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload'] as const;
+export const hstsHeader = [
+  "Strict-Transport-Security",
+  "max-age=63072000; includeSubDomains; preload",
+] as const;
