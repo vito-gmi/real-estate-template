@@ -1,0 +1,358 @@
+/*
+  Automatic source detection is disabled and the source globs are declared
+  explicitly. It scans faster, and it keeps the build from walking runtime
+  artefacts such as a local database socket directory.
+*/
+@import "tailwindcss" source(none);
+
+@source '../**/*.{ts,tsx}';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Design tokens.
+
+  A fork rebrands the entire site by editing this block — every component reads
+  colour, radius and shadow from these variables, none hardcode a hex value.
+*/
+@theme {
+  --color-canvas: oklch(99% 0.003 250);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-muted: oklch(97% 0.005 250);
+  --color-surface-sunken: oklch(94.5% 0.008 250);
+
+  --color-ink: oklch(21% 0.02 255);
+  --color-ink-muted: oklch(48% 0.015 255);
+  --color-ink-subtle: oklch(62% 0.012 255);
+  --color-ink-inverse: oklch(99% 0.003 250);
+
+  --color-line: oklch(90% 0.008 255);
+  --color-line-strong: oklch(83% 0.012 255);
+
+  --color-brand: oklch(38% 0.085 255);
+  --color-brand-hover: oklch(32% 0.09 255);
+  --color-brand-soft: oklch(95% 0.02 255);
+  --color-brand-ring: oklch(55% 0.11 255);
+
+  --color-accent: oklch(74% 0.14 72);
+  --color-accent-hover: oklch(68% 0.15 66);
+  --color-accent-soft: oklch(96% 0.04 80);
+
+  --color-success: oklch(58% 0.13 155);
+  --color-success-soft: oklch(95% 0.04 155);
+  --color-warning: oklch(72% 0.15 75);
+  --color-warning-soft: oklch(96% 0.05 80);
+  --color-danger: oklch(56% 0.19 25);
+  --color-danger-soft: oklch(96% 0.03 25);
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+
+  --shadow-card:
+    0 1px 2px oklch(21% 0.02 255 / 0.04), 0 8px 24px oklch(21% 0.02 255 / 0.06);
+  --shadow-card-hover:
+    0 2px 4px oklch(21% 0.02 255 / 0.06), 0 16px 40px oklch(21% 0.02 255 / 0.1);
+  --shadow-pop: 0 12px 32px oklch(21% 0.02 255 / 0.16);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Overlay/disclosure motion, driven by Radix `data-state` attributes. */
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-fade-out: fade-out 0.12s ease-in;
+  --animate-pop-in: pop-in 0.16s var(--ease-out-soft);
+  --animate-pop-out: pop-out 0.12s ease-in;
+  --animate-slide-in-right: slide-in-right 0.22s var(--ease-out-soft);
+  --animate-slide-out-right: slide-out-right 0.18s ease-in;
+  --animate-accordion-down: accordion-down 0.2s var(--ease-out-soft);
+  --animate-accordion-up: accordion-up 0.18s ease-in;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+.dark {
+  --color-canvas: oklch(17% 0.015 255);
+  --color-surface: oklch(21% 0.018 255);
+  --color-surface-muted: oklch(25% 0.018 255);
+  --color-surface-sunken: oklch(28% 0.018 255);
+
+  --color-ink: oklch(96% 0.005 250);
+  --color-ink-muted: oklch(76% 0.012 250);
+  --color-ink-subtle: oklch(64% 0.012 250);
+  --color-ink-inverse: oklch(17% 0.015 255);
+
+  --color-line: oklch(31% 0.018 255);
+  --color-line-strong: oklch(40% 0.02 255);
+
+  --color-brand: oklch(72% 0.1 250);
+  --color-brand-hover: oklch(79% 0.1 250);
+  --color-brand-soft: oklch(28% 0.04 255);
+  --color-brand-ring: oklch(70% 0.12 255);
+
+  --color-accent: oklch(78% 0.14 72);
+  --color-accent-hover: oklch(84% 0.13 72);
+  --color-accent-soft: oklch(30% 0.05 72);
+
+  --color-success-soft: oklch(28% 0.05 155);
+  --color-warning-soft: oklch(30% 0.06 80);
+  --color-danger-soft: oklch(28% 0.06 25);
+
+  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.35);
+  --shadow-card-hover:
+    0 2px 6px oklch(0% 0 0 / 0.4), 0 16px 40px oklch(0% 0 0 / 0.45);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* A single, consistent focus treatment everywhere — a WCAG 2.2 requirement. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-soft);
+    color: var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Keyboard users need a way past the header and filter rail. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    padding: 0.75rem 1.25rem;
+    background: var(--color-brand);
+    color: var(--color-ink-inverse);
+    border-radius: 0 0 var(--radius-control) 0;
+  }
+
+  .skip-link:focus {
+    left: 0;
+  }
+
+  /*
+    Safari ignores `list-style: none` on <summary> unless the webkit marker is
+    hidden too. Keep summary as a block so iOS does not swallow the toggle
+    (display:flex on <summary> is a known WebKit bug).
+  */
+  .disclosure-summary {
+    display: block;
+    list-style: none;
+  }
+
+  .disclosure-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /*
+    iOS Safari does not dispatch taps to fully transparent (`opacity: 0`)
+    form controls, and it also fails to toggle a clipped `sr-only` checkbox
+    via its label. Stretch the real input over the 44px target and keep a
+    1% opacity so the tap hits the input, not the card link underneath.
+  */
+  .native-hit {
+    appearance: none;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    margin: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.01;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+    Native popovers are promoted to the top layer, so they escape the sticky
+    header's transform — which is why they work on iOS when a React dialog does
+    not. Reset the UA's centred mini-window.
+  */
+  .mobile-nav-popover {
+    inset: 0 0 0 auto;
+    width: min(100vw, 28rem);
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 1.5rem;
+    overflow: auto;
+    border: none;
+    border-left: 1px solid var(--color-line);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .mobile-nav-popover::backdrop {
+    background: color-mix(in oklab, var(--color-ink) 50%, transparent);
+  }
+
+  .gallery-popover {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 1rem;
+    overflow: auto;
+    border: none;
+    background: oklch(21% 0.02 255 / 0.95);
+    color: white;
+  }
+
+  .gallery-popover::backdrop {
+    background: rgb(0 0 0 / 0.7);
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-muted) 25%,
+      var(--color-surface-sunken) 37%,
+      var(--color-surface-muted) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0 50%;
+    }
+  }
+
+  /* MapLibre sizes its canvas from the container. Without an explicit fill the
+     canvas collapses to 0×0 inside tabs and rounded overflow wrappers. */
+  .maplibregl-map {
+    width: 100%;
+    height: 100%;
+    min-height: 18rem;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Estate Template WAF baseline",
+  "description": "Custom WAF rules to configure in the Vercel Firewall dashboard (or via the Vercel API). Checked in so a fork can reproduce the production posture.",
+  "rules": [
+    {
+      "name": "Challenge admin login bursts",
+      "action": "challenge",
+      "condition": "path matches /.*/admin/login AND rate > 20 / 10m / ip"
+    },
+    {
+      "name": "Challenge inquiry POSTs",
+      "action": "challenge",
+      "condition": "path matches /.*/kontakti|/.* /contact AND method = POST AND rate > 30 / 10m / ip"
+    },
+    {
+      "name": "Block known bad bots on search",
+      "action": "deny",
+      "condition": "user_agent contains 'sqlmap' OR user_agent contains 'nikto'"
+    },
+    {
+      "name": "Log high-volume search crawls",
+      "action": "log",
+      "condition": "path matches /.*/prodazhba|/.* /for-sale AND rate > 120 / 1m / ip"
+    }
+  ]
+}

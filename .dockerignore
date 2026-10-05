@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.backups
+.storage
+.pgdata
+.pgsock
+.env
+.env.local
+.env.*.local
+*.md
+docs
+tests
+playwright-report
+test-results
+coverage
