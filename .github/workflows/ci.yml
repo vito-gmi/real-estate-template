@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: "22"
 
 jobs:
   static:
@@ -26,12 +26,35 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
         env:
-          SKIP_ENV_VALIDATION: '1'
+          SKIP_ENV_VALIDATION: "1"
       - run: npm test
 
   build:
     name: Production build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: estate
+          POSTGRES_PASSWORD: estate
+          POSTGRES_DB: estate
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U estate -d estate"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Mocked secrets are fine in CI — Better Auth only requires a non-default
+      # value so the production build can collect page data / prerender.
+      DATABASE_URL: postgres://estate:estate@localhost:5433/estate
+      AUTH_SECRET: ci-only-secret-value-that-is-long-enough-000000
+      NEXT_PUBLIC_SITE_URL: https://example.com
+      STORAGE_DRIVER: local
+      MAIL_DRIVER: console
+      IP_HASH_SALT: ci-ip-hash-salt-change-me-now
+      PREVIEW_TOKEN_SECRET: ci-preview-secret-change-me
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,10 +62,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run db:migrate
       - run: npm run build
-        env:
-          SKIP_ENV_VALIDATION: '1'
-          NEXT_PUBLIC_SITE_URL: https://example.com
 
   database:
     name: Migrations, seed and search benchmark
@@ -54,7 +75,7 @@ jobs:
           POSTGRES_USER: estate
           POSTGRES_PASSWORD: estate
           POSTGRES_DB: estate
-        ports: ['5433:5432']
+        ports: ["5433:5432"]
         options: >-
           --health-cmd "pg_isready -U estate -d estate"
           --health-interval 5s
@@ -90,7 +111,7 @@ jobs:
           POSTGRES_USER: estate
           POSTGRES_PASSWORD: estate
           POSTGRES_DB: estate
-        ports: ['5433:5432']
+        ports: ["5433:5432"]
         options: >-
           --health-cmd "pg_isready -U estate -d estate"
           --health-interval 5s

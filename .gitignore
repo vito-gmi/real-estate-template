@@ -18,6 +18,7 @@ blob-report/
 .env.local
 .env.*.local
 !.env.example
+.env.*
 
 .DS_Store
 *.pem
