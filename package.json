@@ -6,7 +6,7 @@
   "description": "Bilingual real-estate listings platform and reusable open-source template",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "scripts": {
     "copy:maplibre-worker": "node scripts/copy-maplibre-worker.mjs",
@@ -87,7 +87,7 @@
     "@eslint/eslintrc": "^3.3.7",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^22.20.1",
+    "@types/node": "^24.19.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
