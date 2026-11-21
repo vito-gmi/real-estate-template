@@ -8,7 +8,11 @@ import { db } from '@/server/db/client';
 import { listingFeatures, listingTranslations, listings } from '@/server/db/schema';
 import { clientIp, hashIp } from '@/server/rate-limit';
 import { recordAudit } from '@/server/repositories/audit';
-import { resolveFeatureIds, resolveLocationAncestry } from '@/server/repositories/admin-listings';
+import {
+  refreshFacetCounts,
+  resolveFeatureIds,
+  resolveLocationAncestry,
+} from '@/server/repositories/admin-listings';
 import { parseImportPayload } from './import-export';
 import { buildSlug, listingColumns, translationPairs } from './listing-write';
 
@@ -70,6 +74,9 @@ export const importListings = actionClient
       count += 1;
     }
 
+    // Imports land as drafts, so public counts do not change today — refreshed
+    // anyway so a future "import as published" option cannot reintroduce B1.
+    await refreshFacetCounts();
     revalidateListingCaches();
     await recordAudit({
       actorId: user.id,

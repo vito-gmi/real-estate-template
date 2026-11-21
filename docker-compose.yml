@@ -28,19 +28,26 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://estate:estate@postgres:5432/estate
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-random-48-byte-base64-string-abcdefgh}
+      # No fallbacks on purpose: a published default lets anyone forge upload
+      # and preview tokens. The app refuses to boot until these are set
+      # (openssl rand -base64 48), e.g. in a `.env` file next to this one.
+      AUTH_SECRET: ${AUTH_SECRET:-}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       LOCAL_STORAGE_DIR: /data/storage
       MAIL_DRIVER: ${MAIL_DRIVER:-console}
-      IP_HASH_SALT: ${IP_HASH_SALT:-change-me-random-32-chars-minimum}
-      PREVIEW_TOKEN_SECRET: ${PREVIEW_TOKEN_SECRET:-change-me-random-32-chars-minimum}
+      IP_HASH_SALT: ${IP_HASH_SALT:-}
+      PREVIEW_TOKEN_SECRET: ${PREVIEW_TOKEN_SECRET:-}
+      # Caddy overwrites X-Real-IP on every request (see Caddyfile).
+      CLIENT_IP_HEADER: x-real-ip
     volumes:
       - estate-media:/data/storage
     expose:
       - '3000'
     ports:
-      - '3000:3000'
+      # Loopback only. Published on all interfaces, port 3000 let clients skip
+      # Caddy (no TLS, no X-Real-IP overwrite) and spoof their address.
+      - '127.0.0.1:3000:3000'
 
   caddy:
     profiles: ['selfhost']

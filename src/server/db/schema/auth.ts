@@ -71,11 +71,15 @@ export const accounts = pgTable(
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
     /**
-     * better-auth 1.7 keys accounts on (issuer, accountId). Email/password
-     * uses the synthetic value `local:credential` in every environment — it
-     * is not a hostname.
+     * Leftover from better-auth 1.7.0–1.7.2, which keyed accounts on
+     * (issuer, accountId). From 1.7.3 accounts are keyed on
+     * (providerId, accountId) again and better-auth never writes this column,
+     * so it must stay nullable — a NOT NULL here makes better-auth's runtime
+     * schema check reject every auth call. Kept (not dropped) so a rollback to
+     * 1.7.2 still works; drop it in a later migration once that is moot.
+     * https://www.better-auth.com/docs/guides/1-7-upgrade-guide
      */
-    issuer: text('issuer').notNull(),
+    issuer: text('issuer'),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -92,7 +96,8 @@ export const accounts = pgTable(
   },
   (table) => [
     index('accounts_user_idx').on(table.userId, table.providerId),
-    uniqueIndex('accounts_issuer_account_id_key').on(table.issuer, table.accountId),
+    // better-auth rejects a lookup that matches more than one row for this key.
+    uniqueIndex('accounts_provider_account_id_key').on(table.providerId, table.accountId),
   ],
 );
 

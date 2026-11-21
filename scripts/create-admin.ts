@@ -2,7 +2,6 @@ import "../src/server/db/script-env.ts";
 
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
-import { createLocalAccountIssuer } from "@better-auth/core/db";
 import { eq } from "drizzle-orm";
 import { userRoles, type UserRole } from "../src/lib/domain/enums.ts";
 import { auth } from "../src/server/auth/config.ts";
@@ -42,12 +41,12 @@ async function setCredentialPassword(
     return;
   }
 
-  // `createLocalAccountIssuer("credential")` is `local:credential` in every
-  // environment. Sign-in looks this value up; it is not a hostname.
+  // Since better-auth 1.7.3 accounts are keyed on (providerId, accountId);
+  // the 1.7.0–1.7.2 `issuer` field is gone. For email/password the
+  // accountId is the user's own id, as better-auth's sign-up writes it.
   await ctx.internalAdapter.linkAccount({
     userId,
     providerId: "credential",
-    issuer: createLocalAccountIssuer("credential"),
     accountId: userId,
     password: hash,
   });

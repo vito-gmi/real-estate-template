@@ -113,20 +113,21 @@ export async function checkRateLimit(name: LimiterName, key: string): Promise<Li
 }
 
 /**
- * Best-effort client address.
+ * Client address, read from exactly one header: `CLIENT_IP_HEADER`.
  *
- * Only the platform-set forwarding headers are trusted; on Vercel and behind
- * Cloudflare these are rewritten on every request and cannot be spoofed by the
- * client, unlike a bare `X-Forwarded-For`.
+ * A fallback chain is what made this spoofable before: `cf-connecting-ip` was
+ * read first, and a client talking to the origin directly (the `*.vercel.app`
+ * URL, or port 3000 on a VPS) could put any value in it and get a fresh rate
+ * limit bucket per request. Only the header the deployment's edge overwrites
+ * is trusted. For `x-forwarded-for` the right-most entry is used — the one the
+ * nearest proxy appended — never the client-supplied left-most one.
  */
 export async function clientIp(): Promise<string> {
-  const headerList = await headers();
-  return (
-    headerList.get('cf-connecting-ip') ??
-    headerList.get('x-real-ip') ??
-    headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    '0.0.0.0'
-  );
+  const value = (await headers()).get(serverEnv.CLIENT_IP_HEADER);
+  if (!value) return '0.0.0.0';
+  const address =
+    serverEnv.CLIENT_IP_HEADER === 'x-forwarded-for' ? value.split(',').at(-1) : value;
+  return address?.trim() || '0.0.0.0';
 }
 
 /**

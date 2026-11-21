@@ -4,7 +4,12 @@
   # Automatic HTTPS when SITE_DOMAIN is a real hostname.
   {$SITE_DOMAIN:localhost} {
     encode gzip zstd
-    reverse_proxy app:3000
+    reverse_proxy app:3000 {
+      # The app trusts exactly one client-IP header (CLIENT_IP_HEADER,
+      # default x-real-ip). Overwrite it on every request so a client cannot
+      # supply its own value and reset per-IP rate limits.
+      header_up X-Real-IP {remote_host}
+    }
     header {
       Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
       X-Content-Type-Options nosniff

@@ -51,6 +51,15 @@ export const auth = betterAuth({
       }
     : {}),
 
+  /**
+   * Staff sign in only through the `signIn` server action, which adds the
+   * per-account limit, the lockout backoff and the audit trail. Left open, this
+   * HTTP endpoint is a side door around all three (validated: 21 wrong guesses,
+   * no lockout, no audit row, then a session). `disabledPaths` is enforced by
+   * the HTTP router only, so the action's `auth.api.signInEmail` still works.
+   */
+  disabledPaths: ['/sign-in/email'],
+
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema,
@@ -91,6 +100,8 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    // Same single trusted header as the app's own limiters (see rate-limit.ts).
+    ipAddress: { ipAddressHeaders: [serverEnv.CLIENT_IP_HEADER] },
     useSecureCookies: process.env.NODE_ENV === 'production',
     defaultCookieAttributes: {
       httpOnly: true,

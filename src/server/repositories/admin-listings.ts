@@ -149,6 +149,53 @@ export async function sumRecentViews(): Promise<number> {
   return Number(row?.total ?? 0);
 }
 
+/**
+ * Sets the status of many listings at once.
+ *
+ * `publishedAt` is the "newest first" sort key and the RSS/sitemap date, so it
+ * is set only for rows that have never been published and kept for the rest —
+ * the same rule as the single-listing status change. Overwriting it would make
+ * every bulk-touched listing jump to the top of the site as "new" and lose its
+ * real publication date for good. `now` is a JS Date (millisecond precision),
+ * not SQL `now()`, because the keyset cursor carries milliseconds.
+ */
+export async function setListingsStatus(
+  ids: readonly string[],
+  status: ListingStatus,
+  actorId: string,
+): Promise<void> {
+  const now = new Date();
+  await db
+    .update(listings)
+    .set({
+      status,
+      publishedAt:
+        status === 'draft' ? null : sql`coalesce(${listings.publishedAt}, ${now.toISOString()}::timestamptz)`,
+      updatedAt: now,
+      updatedBy: actorId,
+    })
+    .where(inArray(listings.id, [...ids]));
+}
+
+/**
+ * Re-aggregates the `listing_facet_counts` materialized view (per-city counts
+ * on the home page). Postgres never refreshes a materialized view by itself,
+ * so every write that can change what is public — status, kind, location,
+ * create, delete, import — must call this, or the counts freeze at whatever
+ * the last seed left behind.
+ *
+ * Best-effort: the listing write has already committed, and a stale count is
+ * better than reporting a failed save. `CONCURRENTLY` (inside the SQL
+ * function) keeps readers unblocked while it runs.
+ */
+export async function refreshFacetCounts(): Promise<void> {
+  try {
+    await db.execute(sql`select refresh_listing_facet_counts()`);
+  } catch (error) {
+    console.error('[facets] refresh failed; home page counts may be stale', error);
+  }
+}
+
 /** Resolves feature keys to ids so the join table can be rewritten wholesale. */
 export async function resolveFeatureIds(keys: readonly string[]): Promise<string[]> {
   if (keys.length === 0) return [];

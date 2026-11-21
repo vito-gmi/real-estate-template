@@ -41,6 +41,18 @@ const serverSchema = z.object({
   UPSTASH_REDIS_REST_URL: optionalUrl,
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
+  /**
+   * The ONE request header that carries the real client address. Only a header
+   * your edge overwrites on every request is safe; any other can be set by the
+   * client to dodge per-IP rate limits.
+   *   x-real-ip        Vercel (set by the platform) and the bundled Caddyfile
+   *   cf-connecting-ip Cloudflare-proxied, AND the origin only reachable via Cloudflare
+   *   x-forwarded-for  a proxy that replaces/appends it (right-most entry is used)
+   */
+  CLIENT_IP_HEADER: z
+    .enum(["x-real-ip", "cf-connecting-ip", "x-forwarded-for"])
+    .default("x-real-ip"),
+
   IP_HASH_SALT: z.string().min(16).default("dev-only-ip-hash-salt-change-me"),
   PREVIEW_TOKEN_SECRET: z
     .string()
@@ -96,6 +108,36 @@ function parseClientEnv() {
   return parsed.data;
 }
 
+/**
+ * Secrets that sign tokens or salt hashes. In production each must be set
+ * explicitly and must not be one of the values published in this repository
+ * (`.env.example`, `docker-compose.yml`, the dev defaults above) — anyone can
+ * read those, and with them forge upload/preview tokens.
+ */
+const PRODUCTION_SECRETS = [
+  "AUTH_SECRET",
+  "IP_HASH_SALT",
+  "PREVIEW_TOKEN_SECRET",
+] as const;
+
+const PUBLISHED_PLACEHOLDERS = new Set([
+  "change-me-to-a-random-48-byte-base64-string-abcdefgh",
+  "change-me-random-32-chars-minimum",
+  "dev-only-ip-hash-salt-change-me",
+  "dev-only-preview-secret-change",
+]);
+
+function productionSecretIssues(env: z.infer<typeof serverSchema>): string[] {
+  if (env.NODE_ENV !== "production") return [];
+  return PRODUCTION_SECRETS.filter((key) => {
+    const raw = process.env[key];
+    return !raw || PUBLISHED_PLACEHOLDERS.has(raw);
+  }).map(
+    (key) =>
+      `  - ${key}: must be set to a unique random value in production (openssl rand -base64 48)`,
+  );
+}
+
 function parseServerEnv() {
   if (skipValidation) {
     // Used by lint/typecheck/build steps that never open a socket.
@@ -107,6 +149,12 @@ function parseServerEnv() {
   if (!parsed.success) {
     throw new Error(
       `Invalid server environment variables:\n${formatIssues(parsed.error)}`,
+    );
+  }
+  const secretIssues = productionSecretIssues(parsed.data);
+  if (secretIssues.length > 0) {
+    throw new Error(
+      `Insecure server environment variables:\n${secretIssues.join("\n")}`,
     );
   }
   return parsed.data;

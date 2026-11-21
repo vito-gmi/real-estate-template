@@ -14,8 +14,10 @@ import { listingStatuses } from '@/lib/domain/enums';
 import { diffOf, recordAudit } from '@/server/repositories/audit';
 import {
   getAdminListing,
+  refreshFacetCounts,
   resolveFeatureIds,
   resolveLocationAncestry,
+  setListingsStatus,
 } from '@/server/repositories/admin-listings';
 import { listingFormSchema, statusChangeSchema, type ListingFormValues } from './listing-schema';
 import { buildSlug, listingColumns, translationPairs } from './listing-write';
@@ -81,6 +83,7 @@ export const createListing = actionClient
       return created.id;
     });
 
+    await refreshFacetCounts();
     revalidateListingCaches(id);
     await recordAudit({
       actorId: user.id,
@@ -162,6 +165,7 @@ export const updateListing = actionClient
       }
     });
 
+    await refreshFacetCounts();
     revalidateListingCaches(id);
     await recordAudit({
       actorId: user.id,
@@ -199,6 +203,7 @@ export const changeListingStatus = actionClient
       })
       .where(eq(listings.id, parsedInput.id));
 
+    await refreshFacetCounts();
     revalidateListingCaches(parsedInput.id);
     await recordAudit({
       actorId: user.id,
@@ -227,6 +232,7 @@ export const deleteListing = actionClient
 
     await db.delete(listings).where(eq(listings.id, parsedInput.id));
 
+    await refreshFacetCounts();
     revalidateListingCaches(parsedInput.id);
     await recordAudit({
       actorId: user.id,
@@ -252,17 +258,9 @@ export const bulkChangeListingStatus = actionClient
     const user = await requireEditor();
     if (!user) return actionErr('forbidden', 'errors.forbidden');
 
-    const now = new Date();
-    await db
-      .update(listings)
-      .set({
-        status: parsedInput.status,
-        publishedAt: parsedInput.status === 'draft' ? null : now,
-        updatedAt: now,
-        updatedBy: user.id,
-      })
-      .where(inArray(listings.id, parsedInput.ids));
+    await setListingsStatus(parsedInput.ids, parsedInput.status, user.id);
 
+    await refreshFacetCounts();
     for (const id of parsedInput.ids) revalidateListingCaches(id);
     await recordAudit({
       actorId: user.id,
@@ -286,6 +284,7 @@ export const bulkDeleteListings = actionClient
 
     await db.delete(listings).where(inArray(listings.id, parsedInput.ids));
 
+    await refreshFacetCounts();
     for (const id of parsedInput.ids) revalidateListingCaches(id);
     await recordAudit({
       actorId: user.id,

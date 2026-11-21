@@ -10,6 +10,11 @@ import type { Instrumentation } from "next";
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
+  // Validate the environment at boot, so a missing or placeholder secret stops
+  // the server from starting instead of surfacing as a 500 on first request.
+  await import("@/env");
+
   if (!process.env.SENTRY_DSN) return;
 
   const Sentry = await import("@sentry/node");

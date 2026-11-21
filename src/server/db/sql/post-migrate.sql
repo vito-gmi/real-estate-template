@@ -8,7 +8,9 @@
 -- the listings table on every page view. This view pre-aggregates the publicly
 -- visible listings down to a few thousand rows; the application then sums the
 -- slice it needs, which is a constant-time operation regardless of catalogue
--- size. It is refreshed whenever a listing's visibility changes, and on a cron.
+-- size. It is refreshed after every admin listing write (refreshFacetCounts in
+-- src/server/repositories/admin-listings.ts) and by the seed scripts. Nothing
+-- refreshes it automatically — a new write path must call that function too.
 -- ---------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW IF NOT EXISTS listing_facet_counts AS
 SELECT
