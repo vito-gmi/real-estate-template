@@ -22,20 +22,40 @@ Hobby is non-commercial. An agency site needs Pro.
 
 ## Self-host path: Docker Compose + Caddy
 
-```bash
-cp .env.example .env.local
-# fill AUTH_SECRET, IP_HASH_SALT, PREVIEW_TOKEN_SECRET
-docker compose --profile selfhost up --build
-```
+Postgres, the Next.js app (standalone output) and Caddy (automatic HTTPS) run together. Run these steps on the server, in a checkout of this repository, with Docker and Node.js 24 installed.
 
-Postgres, the Next.js app (standalone output) and Caddy (automatic HTTPS) come up together. Point `SITE_DOMAIN` at your hostname. Storage defaults to a local volume; set `STORAGE_DRIVER=s3` to use R2 or MinIO without touching application code.
-
-After the first boot:
+**1. Settings.** Docker Compose reads `.env` (not `.env.local`) from this folder. Create it before the first start — the database password only takes effect when the database volume is created:
 
 ```bash
-docker compose --profile selfhost exec app node --import tsx/esm src/server/db/migrate.ts
-docker compose --profile selfhost exec app node --conditions=react-server --import tsx/esm scripts/create-admin.ts
+DOMAIN=estate.example.bg   # your hostname, already pointing at this server
+cat > .env <<EOF
+SITE_DOMAIN=$DOMAIN
+NEXT_PUBLIC_SITE_URL=https://$DOMAIN
+AUTH_SECRET=$(openssl rand -base64 48)
+IP_HASH_SALT=$(openssl rand -base64 32)
+PREVIEW_TOKEN_SECRET=$(openssl rand -base64 32)
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+EOF
 ```
+
+If a secret is missing, the app logs its name at startup (`docker compose logs app`) and every request fails until it is set. `NEXT_PUBLIC_*` values are compiled into the app when the image is built, so after changing one, rebuild with `--build`.
+
+**2. Build and start.**
+
+```bash
+docker compose --profile selfhost up -d --build
+```
+
+**3. Create the schema and the first admin.** The app image contains only the compiled server, so these run from the checkout, against Postgres on `127.0.0.1:5433` (published to this machine only):
+
+```bash
+npm ci
+export $(grep POSTGRES_PASSWORD .env)
+DATABASE_URL="postgres://estate:$POSTGRES_PASSWORD@127.0.0.1:5433/estate" npm run db:migrate
+DATABASE_URL="postgres://estate:$POSTGRES_PASSWORD@127.0.0.1:5433/estate" npm run admin:create
+```
+
+Re-run `db:migrate` after every update that adds a migration. Uploads go to a Docker volume by default; set `STORAGE_DRIVER=s3` in `.env` (and add the `S3_*` variables to the `app` service) to use R2 or MinIO instead.
 
 ## Environment
 

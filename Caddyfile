@@ -1,20 +1,25 @@
-{
-  email your-email@example.com
+# Automatic HTTPS: a real hostname in SITE_DOMAIN gets a Let's Encrypt
+# certificate; `localhost` gets one from Caddy's local CA.
+#
+# To receive certificate-expiry emails, add a global options block as the very
+# first thing in this file:
+#   {
+#     email you@your-domain.example
+#   }
+{$SITE_DOMAIN:localhost} {
+	encode gzip zstd
 
-  # Automatic HTTPS when SITE_DOMAIN is a real hostname.
-  {$SITE_DOMAIN:localhost} {
-    encode gzip zstd
-    reverse_proxy app:3000 {
-      # The app trusts exactly one client-IP header (CLIENT_IP_HEADER,
-      # default x-real-ip). Overwrite it on every request so a client cannot
-      # supply its own value and reset per-IP rate limits.
-      header_up X-Real-IP {remote_host}
-    }
-    header {
-      Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-      X-Content-Type-Options nosniff
-      Referrer-Policy strict-origin-when-cross-origin
-      X-Frame-Options DENY
-    }
-  }
+	reverse_proxy app:3000 {
+		# The app trusts exactly one client-IP header (CLIENT_IP_HEADER,
+		# default x-real-ip). Overwrite it on every request so a client cannot
+		# supply its own value and reset per-IP rate limits.
+		header_up X-Real-IP {remote_host}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+	}
 }

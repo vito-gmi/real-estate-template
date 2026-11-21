@@ -5,10 +5,17 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: estate
-      POSTGRES_PASSWORD: estate
+      # `estate` is fine for local development. On a server set POSTGRES_PASSWORD
+      # in `.env` BEFORE the first start: Postgres only reads it when it creates
+      # the data volume. Use letters and digits only (openssl rand -hex 24), as
+      # it is also placed inside the app's DATABASE_URL.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-estate}
       POSTGRES_DB: estate
     ports:
-      - '5433:5432'
+      # Loopback only: reachable from this machine (`npm run dev`, migrations),
+      # never from the network. On all interfaces, a self-hosted server would
+      # expose its database to the internet.
+      - '127.0.0.1:5433:5432'
     volumes:
       - estate-pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -22,15 +29,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Compiled into the app by `next build` (see Dockerfile): changing one of
+      # these needs `docker compose --profile selfhost up --build`.
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_MEDIA_BASE_URL: ${NEXT_PUBLIC_MEDIA_BASE_URL:-/media}
+        NEXT_PUBLIC_MAP_STYLE_URL: ${NEXT_PUBLIC_MAP_STYLE_URL:-}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://estate:estate@postgres:5432/estate
+      DATABASE_URL: postgres://estate:${POSTGRES_PASSWORD:-estate}@postgres:5432/estate
       # No fallbacks on purpose: a published default lets anyone forge upload
-      # and preview tokens. The app refuses to boot until these are set
-      # (openssl rand -base64 48), e.g. in a `.env` file next to this one.
+      # and preview tokens. Until these are set (openssl rand -base64 48, in a
+      # `.env` file next to this one) the app logs the missing names at startup
+      # and answers every request with an error.
       AUTH_SECRET: ${AUTH_SECRET:-}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}

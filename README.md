@@ -2,9 +2,7 @@
 
 A production-ready, bilingual (Bulgarian / English) real-estate listings platform — and a reusable open-source template. The public site is read-heavy and cached at the edge; a hardened admin console is the only write path.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_ORG/estate-template&env=DATABASE_URL,AUTH_SECRET,NEXT_PUBLIC_SITE_URL,IP_HASH_SALT,PREVIEW_TOKEN_SECRET&envDescription=See%20.env.example%20for%20the%20full%20list&project-name=estate-template&repository-name=estate-template)
-
-Replace `YOUR_ORG/estate-template` in the button URL with this repository after you push it.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vito-gmi/real-estate-template&env=DATABASE_URL,AUTH_SECRET,NEXT_PUBLIC_SITE_URL,IP_HASH_SALT,PREVIEW_TOKEN_SECRET&envDescription=See%20.env.example%20for%20the%20full%20list&project-name=estate-template&repository-name=estate-template)
 
 ## What you get
 

@@ -14,11 +14,11 @@ playwright-report/
 blob-report/
 .playwright/
 
+# Every env file is private except the documented example. The `!` exception
+# must come AFTER `.env.*`: git applies the last matching rule.
 .env
-.env.local
-.env.*.local
-!.env.example
 .env.*
+!.env.example
 
 .DS_Store
 *.pem
@@ -43,3 +43,5 @@ public/maplibre/
 
 # Local files
 local-queries/
+# Cursor's AI planning documents: kept on this machine, never committed.
+.cursor/plans/

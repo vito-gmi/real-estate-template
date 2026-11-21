@@ -11,8 +11,10 @@ import type { Instrumentation } from "next";
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  // Validate the environment at boot, so a missing or placeholder secret stops
-  // the server from starting instead of surfacing as a 500 on first request.
+  // Validate the environment at boot, so a missing or placeholder secret is
+  // reported in the log the moment the server starts, naming the variable,
+  // rather than on whichever request first needs it. Next keeps the process
+  // running, but every request then fails until the setting is fixed.
   await import("@/env");
 
   if (!process.env.SENTRY_DSN) return;

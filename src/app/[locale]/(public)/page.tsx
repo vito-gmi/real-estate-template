@@ -17,6 +17,7 @@ import { formatNumber } from '@/lib/format';
 import { searchPath } from '@/lib/routes';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { JsonLd, organizationJsonLd } from '@/lib/seo/json-ld';
+import { deferIfBuildingWithoutDatabase } from '@/server/prerender';
 import type { Metadata } from 'next';
 
 /** Regenerated in the background; a visitor never waits for a rebuild. */
@@ -42,6 +43,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
+  await deferIfBuildingWithoutDatabase();
 
   const [t, tEnum, featured, newest, cities, total] = await Promise.all([
     getTranslations('home'),
