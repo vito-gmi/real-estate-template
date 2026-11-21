@@ -534,10 +534,10 @@ export const seedFeatures: readonly SeedFeature[] = [
     icon: "Waves",
   },
   {
-    key: "playground",
+    key: "kindergarten",
     category: "outdoor",
-    nameBg: "Детска площадка",
-    nameEn: "Playground",
+    nameBg: "Детска градина",
+    nameEn: "Kindergarten",
     icon: "ToyBrick",
   },
 

@@ -40,3 +40,6 @@ public/maplibre/
 .pgdata/
 .pgsock/
 .tmp/
+
+# Local files
+local-queries/
