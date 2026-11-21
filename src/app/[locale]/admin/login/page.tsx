@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { siteConfig } from '@/config/site';
+import { BrandLogo } from '@/components/layout/brand-logo';
 import { LoginForm } from '@/features/auth/components/login-form';
 import type { Locale } from '@/i18n/routing';
 import { adminPath } from '@/lib/routes';
@@ -28,8 +28,8 @@ export default async function AdminLoginPage({
   return (
     <div className="grid min-h-dvh place-items-center bg-surface-muted px-4 py-12">
       <div className="w-full max-w-sm">
-        <p className="mb-8 text-center text-lg font-semibold tracking-tight text-ink">
-          {siteConfig.name}
+        <p className="mb-8 flex items-center justify-center gap-2 text-lg font-semibold tracking-tight text-ink">
+          <BrandLogo imageClassName="h-10" />
         </p>
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <LoginForm next={destination} />

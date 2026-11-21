@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, Phone, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { siteConfig } from '@/config/site';
+import { BrandLogo } from './brand-logo';
 
 export type NavItem = { readonly href: string; readonly label: string };
 
@@ -35,7 +36,9 @@ export function MobileNav({ items }: { items: readonly NavItem[] }) {
       </button>
       <div id={menuId} popover="auto" className="mobile-nav-popover">
         <div className="flex items-start justify-between gap-3 pr-12">
-          <p className="text-lg font-semibold text-ink">{siteConfig.name}</p>
+          <p className="flex items-center gap-2 text-lg font-semibold text-ink">
+            <BrandLogo imageClassName="h-8" />
+          </p>
           <button
             type="button"
             className="absolute right-4 top-4 grid size-11 place-items-center rounded-full text-ink-muted touch-manipulation hover:bg-surface-muted hover:text-ink"

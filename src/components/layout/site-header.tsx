@@ -4,6 +4,7 @@ import { siteConfig } from "@/config/site";
 import { FavoritesLink } from "@/features/favorites/favorites-link";
 import type { Locale } from "@/i18n/routing";
 import { homePath, searchPath, staticPath } from "@/lib/routes";
+import { BrandLogo } from "./brand-logo";
 import { LocaleSwitcher } from "./locale-switcher";
 import { MobileNav, type NavItem } from "./mobile-nav";
 
@@ -26,13 +27,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
           href={homePath(locale)}
           className="mr-2 flex items-center gap-2 text-lg font-semibold tracking-tight text-ink"
         >
-          <span
-            aria-hidden="true"
-            className="grid size-8 place-items-center rounded-lg bg-brand text-sm font-bold text-ink-inverse"
-          >
-            {siteConfig.name.slice(0, 1)}
-          </span>
-          {siteConfig.name}
+          <BrandLogo withMark imageClassName="h-8" />
         </a>
 
         <nav aria-label="Main" className="hidden md:flex md:items-center md:gap-1">

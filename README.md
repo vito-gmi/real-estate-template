@@ -33,8 +33,9 @@ Open [http://localhost:3000/bg](http://localhost:3000/bg) and [http://localhost:
 ## Rebrand
 
 1. Edit `src/config/site.ts` — name, offices, currency, feature flags.
-2. Edit `src/app/globals.css` — design tokens in the `@theme` block.
-3. Translate or rewrite `messages/bg.json` and `messages/en.json`.
+2. Add your logo: put the files in `public/brand/`, then set `logo` (e.g. `{ src: '/brand/logo.svg', width: 180, height: 40 }`) and `favicon` (a square `.png`, `.jpg` or `.svg`) in `src/config/site.ts`. Left at `null`, the site shows a text wordmark built from `name`.
+3. Edit `src/app/globals.css` — design tokens in the `@theme` block.
+4. Translate or rewrite `messages/bg.json` and `messages/en.json`.
 
 Nothing agency-specific should be hardcoded in a component.
 

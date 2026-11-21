@@ -29,6 +29,8 @@ export function organizationJsonLd(locale: Locale): Record<string, unknown> {
     '@type': 'RealEstateAgent',
     name: siteConfig.legalName,
     url: siteConfig.url,
+    // Search engines may show this logo next to the business in results.
+    ...(siteConfig.logo ? { logo: absolute(siteConfig.logo.src) } : {}),
     telephone: siteConfig.contact.phone,
     email: siteConfig.contact.email,
     sameAs: siteConfig.social.map((social) => social.href),

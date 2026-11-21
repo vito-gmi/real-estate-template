@@ -22,11 +22,43 @@ export type Office = {
   readonly lng: number;
 };
 
+/**
+ * An image logo. Files live in `public/` and are referenced from the site root,
+ * e.g. `public/brand/logo.svg` → `'/brand/logo.svg'` (the CSP only allows images
+ * from this site and the media host, so do not point at a third-party URL).
+ */
+export type BrandLogo = {
+  readonly src: string;
+  /** Used instead of `src` while the `.dark` theme class is active. */
+  readonly srcDark?: string;
+  /**
+   * The file's intrinsic size in pixels. Only the ratio matters — the logo is
+   * scaled to the slot's height — but declaring it stops the header jumping
+   * while the image loads.
+   */
+  readonly width: number;
+  readonly height: number;
+  /** Also print `name` next to the image, for a symbol-only logo. */
+  readonly showName?: boolean;
+};
+
 export const siteConfig = {
   /** Brand name shown in the header, page titles and JSON-LD. */
   name: 'Estate',
   /** Longer legal/organisation name used in structured data. */
   legalName: 'Estate Real Estate Ltd.',
+  /**
+   * Image logo for the header, footer, mobile menu, admin console and
+   * structured data. `null` keeps the text wordmark built from `name`.
+   * Example: `{ src: '/brand/logo.svg', width: 180, height: 40 }`
+   */
+  logo: null as BrandLogo | null,
+  /**
+   * Square image for the browser tab icon: a PNG, JPEG or SVG path in
+   * `public/`, e.g. `'/brand/icon.png'`. `null` draws the first letter of
+   * `name` on a dark tile.
+   */
+  favicon: null as string | null,
   domain: new URL(clientEnv.NEXT_PUBLIC_SITE_URL).host,
   url: clientEnv.NEXT_PUBLIC_SITE_URL,
 

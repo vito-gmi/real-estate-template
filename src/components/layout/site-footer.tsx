@@ -5,6 +5,7 @@ import { siteConfig } from '@/config/site';
 import { propertyKinds } from '@/lib/domain/enums';
 import type { Locale } from '@/i18n/routing';
 import { searchPath, staticPath } from '@/lib/routes';
+import { BrandLogo } from './brand-logo';
 
 /** Kinds worth a footer link — the long tail lives behind the filters. */
 const FOOTER_KINDS = propertyKinds.slice(0, 5);
@@ -20,7 +21,9 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
     <footer className="mt-20 border-t border-line bg-surface-muted">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-4 lg:px-8">
         <div className="lg:col-span-1">
-          <p className="text-lg font-semibold text-ink">{siteConfig.name}</p>
+          <p className="flex items-center gap-2 text-lg font-semibold text-ink">
+            <BrandLogo imageClassName="h-10" />
+          </p>
           <p className="mt-2 max-w-xs text-sm text-ink-muted">{t('tagline')}</p>
           <ul className="mt-5 space-y-2 text-sm text-ink-muted">
             <li>

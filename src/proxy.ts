@@ -129,12 +129,14 @@ export const config = {
     /*
      * Everything except: API routes, Next internals, locally served media, the
      * machine-readable endpoints that are locale-agnostic by design (sitemaps,
-     * feeds), and files that already carry an extension.
+     * feeds), the generated tab icon (`app/icon.tsx`, served at `/icon`), and
+     * files that already carry an extension.
      *
      * Getting this list wrong is subtle: a missing entry makes the locale
      * middleware redirect `/sitemap.xml` to `/bg/sitemap.xml`, which crawlers
-     * see as a broken sitemap.
+     * see as a broken sitemap — and `/icon` to `/bg/icon`, a 404, which leaves
+     * every page without a favicon.
      */
-    "/((?!api|_next/static|_next/image|media|feed|sitemap|sitemaps|.*\\.[\\w]+$).*)",
+    "/((?!api|_next/static|_next/image|media|feed|sitemap|sitemaps|icon$|.*\\.[\\w]+$).*)",
   ],
 };

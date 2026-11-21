@@ -8,6 +8,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { BrandLogo } from '@/components/layout/brand-logo';
 import { siteConfig } from '@/config/site';
 import type { Locale } from '@/i18n/routing';
 import { adminPath, homePath } from '@/lib/routes';
@@ -43,9 +44,12 @@ export async function AdminShell({
     <div className="min-h-dvh bg-surface-muted">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-          <Link href={adminPath(locale)} className="font-semibold tracking-tight text-ink">
-            {siteConfig.name}
-            <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
+          <Link
+            href={adminPath(locale)}
+            className="flex items-center gap-2 font-semibold tracking-tight text-ink"
+          >
+            <BrandLogo imageClassName="h-7" />
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
               {t('title')}
             </span>
           </Link>
