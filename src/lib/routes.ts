@@ -18,6 +18,7 @@ export const staticRouteKeys = [
   'about',
   'privacy',
   'terms',
+  'submit',
 ] as const;
 
 export type StaticRouteKey = (typeof staticRouteKeys)[number];
@@ -30,6 +31,8 @@ export const staticRouteSlugs: Readonly<Record<StaticRouteKey, Readonly<Record<L
   about: { bg: 'za-nas', en: 'about' },
   privacy: { bg: 'poveritelnost', en: 'privacy' },
   terms: { bg: 'usloviya', en: 'terms' },
+  /** "Offer your property" — the public form owners use to list with the agency. */
+  submit: { bg: 'predlozhete-imot', en: 'list-your-property' },
 };
 
 export function routeSlug(key: StaticRouteKey, locale: Locale): string {

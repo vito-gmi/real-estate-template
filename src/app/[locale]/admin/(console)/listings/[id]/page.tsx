@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, KeyRound, Mail, Phone } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { ListingForm } from '@/features/admin/components/listing-form';
@@ -16,6 +16,7 @@ import { getAdminListing } from '@/server/repositories/admin-listings';
 import { listAuditForEntity } from '@/server/repositories/audit';
 import { listFilterableFeatures } from '@/server/repositories/features';
 import { getLocationTree } from '@/server/repositories/locations';
+import { getSubmissionByListingId } from '@/server/repositories/submissions';
 
 export default async function EditListingPage({
   params,
@@ -28,12 +29,13 @@ export default async function EditListingPage({
   const detail = await getAdminListing(id);
   if (!detail) notFound();
 
-  const [locations, features, history, t, tEnum] = await Promise.all([
+  const [locations, features, history, t, tEnum, source] = await Promise.all([
     getLocationTree(locale),
     listFilterableFeatures(locale),
     listAuditForEntity('listing', id, 12),
     getTranslations('admin'),
     getTranslations('enums'),
+    getSubmissionByListingId(id),
   ]);
 
   const slug = detail.translations[locale]?.slug;
@@ -67,6 +69,34 @@ export default async function EditListingPage({
           />
         </div>
       </div>
+
+      {source ? (
+        // Where this listing came from, and how to reach the owner.
+        <aside className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-card border border-line bg-brand-soft px-5 py-3 text-sm">
+          <Link
+            href={adminPath(locale, `submissions/${source.id}`)}
+            className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+          >
+            <KeyRound className="size-4" />
+            {t('submissions.fromSubmission', { reference: source.reference })}
+          </Link>
+          <span className="text-ink">
+            {source.firstName} {source.lastName}
+          </span>
+          {source.phone ? (
+            <a href={`tel:${source.phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 text-ink-muted hover:text-brand">
+              <Phone className="size-4" />
+              {source.phone}
+            </a>
+          ) : null}
+          {source.email ? (
+            <a href={`mailto:${source.email}`} className="inline-flex items-center gap-1.5 text-ink-muted hover:text-brand">
+              <Mail className="size-4" />
+              {source.email}
+            </a>
+          ) : null}
+        </aside>
+      ) : null}
 
       <ListingForm
         listingId={id}

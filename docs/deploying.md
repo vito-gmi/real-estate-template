@@ -17,6 +17,7 @@
 
 7. In the Vercel Firewall dashboard, recreate the rules documented in `docs/waf.rules.json`.
 8. Optional: set `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`. The browser SDK loads only after cookie consent.
+9. For the "List your property" form: create a second, **private** R2 bucket (`S3_PRIVATE_BUCKET`), Turnstile keys and `CRON_SECRET` — step by step in [property-submissions.md](property-submissions.md#setup). Until the private bucket exists the form stays closed.
 
 Hobby is non-commercial. An agency site needs Pro.
 

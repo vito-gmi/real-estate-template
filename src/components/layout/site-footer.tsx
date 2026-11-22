@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { siteConfig } from '@/config/site';
+import { getPublicSubmissionAvailability } from '@/features/submissions/availability';
 import { propertyKinds } from '@/lib/domain/enums';
 import type { Locale } from '@/i18n/routing';
 import { searchPath, staticPath } from '@/lib/routes';
@@ -11,10 +12,11 @@ import { BrandLogo } from './brand-logo';
 const FOOTER_KINDS = propertyKinds.slice(0, 5);
 
 export async function SiteFooter({ locale }: { locale: Locale }) {
-  const [t, tNav, tEnum] = await Promise.all([
+  const [t, tNav, tEnum, submissions] = await Promise.all([
     getTranslations('footer'),
     getTranslations('nav'),
     getTranslations('enums'),
+    getPublicSubmissionAvailability(),
   ]);
 
   return (
@@ -57,6 +59,9 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
           <FooterLink href={staticPath('favorites', locale)}>{tNav('favorites')}</FooterLink>
           {siteConfig.features.compare ? (
             <FooterLink href={staticPath('compare', locale)}>{tNav('compare')}</FooterLink>
+          ) : null}
+          {submissions.open ? (
+            <FooterLink href={staticPath('submit', locale)}>{tNav('listProperty')}</FooterLink>
           ) : null}
         </FooterColumn>
 

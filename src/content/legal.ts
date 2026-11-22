@@ -23,7 +23,7 @@ export type LegalDocument = {
   readonly sections: readonly LegalSection[];
 };
 
-const UPDATED = '2026-01-01';
+const UPDATED = '2026-11-22';
 
 const privacyBg: LegalDocument = {
   title: 'Политика за поверителност',
@@ -40,6 +40,7 @@ const privacyBg: LegalDocument = {
       heading: 'Какви данни събираме',
       paragraphs: [
         'Когато изпратиш запитване, събираме името, имейла, телефона (ако си го посочил) и текста на съобщението. Тези данни са необходими, за да отговорим.',
+        'Когато ни предложиш имот през формуляра „Предложи имот“, събираме името, имейла и телефона ти, данните за имота и снимките. Използваме ги, за да оценим имота и да се свържем с теб. Снимките се пазят в частно хранилище и не са публични, докато брокер не ги прегледа; метаданните им (включително GPS координати) се премахват при качването.',
         'Записваме и необратим криптографски отпечатък на IP адреса ти, за да ограничим злоупотреби. Самият IP адрес не се съхранява.',
         'Сайтът не изисква регистрация. Списъкът ти с любими имоти се пази единствено в браузъра на устройството ти и никога не достига до нашите сървъри.',
       ],
@@ -56,12 +57,14 @@ const privacyBg: LegalDocument = {
       paragraphs: [
         'Базата данни, файловото хранилище и сървърите за приложението се намират в Европейския съюз.',
         'Обработващи лица са само доставчиците на хостинг, база данни и имейл услуги, с които имаме сключени договори по чл. 28 от GDPR.',
+        'Формулярът „Предложи имот“ използва Cloudflare Turnstile за защита от автоматизирани заявки. Cloudflare обработва техническа информация за браузъра ти само за тази проверка и не поставя бисквитки.',
       ],
     },
     {
       heading: 'Колко дълго пазим данните',
       paragraphs: [
         'Запитванията се съхраняват до 24 месеца след последната комуникация, след което се изтриват или анонимизират.',
+        'Неизпратени заявки за имоти се изтриват след 24 часа, а отказаните — след 30 дни. Снимките от приети заявки се копират в обявата, а оригиналите се изтриват след 30 дни; данните ти за контакт пазим, докато работим по имота.',
         'Записите в журнала на административните промени се пазят 12 месеца с цел проследимост и сигурност.',
       ],
     },
@@ -91,6 +94,7 @@ const privacyEn: LegalDocument = {
       heading: 'What we collect',
       paragraphs: [
         'When you send an enquiry we collect your name, email address, phone number if you provide one, and the message itself. We need these in order to reply.',
+        'When you offer a property through the “List your property” form we collect your name, email address, phone number, the property details and photos, in order to assess the property and contact you. Photos are kept in private storage and are not public until an agent has reviewed them; their metadata (including GPS location) is removed on upload.',
         'We also store a one-way cryptographic hash of your IP address so we can limit abuse. The address itself is never stored.',
         'The site requires no account. Your list of favourite properties is kept solely in your browser and never reaches our servers.',
       ],
@@ -107,12 +111,14 @@ const privacyEn: LegalDocument = {
       paragraphs: [
         'The database, the file storage and the application servers are all located in the European Union.',
         'The only processors involved are our hosting, database and email providers, each under a GDPR Article 28 agreement.',
+        'The “List your property” form uses Cloudflare Turnstile to keep out automated submissions. Cloudflare processes technical information about your browser for that check only and sets no cookies.',
       ],
     },
     {
       heading: 'How long we keep it',
       paragraphs: [
         'Enquiries are retained for up to 24 months after the last contact, then deleted or anonymised.',
+        'Property submissions that are never sent are deleted after 24 hours, declined ones after 30 days. Photos from accepted submissions are copied into the listing and the originals deleted after 30 days; we keep your contact details while we represent the property.',
         'Administrative audit entries are retained for 12 months for traceability and security.',
       ],
     },

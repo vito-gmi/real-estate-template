@@ -106,6 +106,33 @@ export type InquiryKind = (typeof inquiryKinds)[number];
 export const userRoles = ["admin", "editor", "agent"] as const;
 export type UserRole = (typeof userRoles)[number];
 
+/**
+ * Lifecycle of a property a visitor offers through the public form.
+ *
+ * `incomplete` rows exist only while the visitor is still uploading photos;
+ * nothing reaches the review queue before it becomes `pending`.
+ */
+export const submissionStatuses = [
+  "incomplete",
+  "pending",
+  "approved",
+  "rejected",
+  "spam",
+] as const;
+export type SubmissionStatus = (typeof submissionStatuses)[number];
+
+/** Statuses a reviewer works with; `incomplete` never shows in the console. */
+export const reviewableSubmissionStatuses = [
+  "pending",
+  "approved",
+  "rejected",
+  "spam",
+] as const satisfies readonly SubmissionStatus[];
+
+/** Who is offering the property. Agents ask differently of an owner. */
+export const submitterRoles = ["owner", "co_owner", "representative"] as const;
+export type SubmitterRole = (typeof submitterRoles)[number];
+
 export const locationLevels = [
   "country",
   "region",

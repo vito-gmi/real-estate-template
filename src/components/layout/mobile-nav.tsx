@@ -2,7 +2,7 @@
 
 import { useId } from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu, Phone, X } from 'lucide-react';
+import { KeyRound, Menu, Phone, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { siteConfig } from '@/config/site';
 import { BrandLogo } from './brand-logo';
@@ -17,7 +17,14 @@ export type NavItem = { readonly href: string; readonly label: string };
  * the language switcher work on a real iPhone. The panel is promoted to the
  * top layer, so it is not trapped by the header's `transform`.
  */
-export function MobileNav({ items }: { items: readonly NavItem[] }) {
+export function MobileNav({
+  items,
+  cta,
+}: {
+  items: readonly NavItem[];
+  /** Highlighted owner action ("List your property"), when enabled. */
+  cta?: NavItem;
+}) {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
   const pathname = usePathname();
@@ -61,9 +68,18 @@ export function MobileNav({ items }: { items: readonly NavItem[] }) {
             </a>
           ))}
         </nav>
+        {cta ? (
+          <a
+            href={cta.href}
+            className="mt-6 flex items-center justify-center gap-2 rounded-control border border-brand px-4 py-3 font-medium text-brand"
+          >
+            <KeyRound className="size-4" aria-hidden="true" />
+            {cta.label}
+          </a>
+        ) : null}
         <a
           href={siteConfig.contact.phoneHref}
-          className="mt-6 inline-flex items-center gap-2 rounded-control bg-brand px-4 py-3 font-medium text-ink-inverse"
+          className={`${cta ? 'mt-3' : 'mt-6'} inline-flex items-center gap-2 rounded-control bg-brand px-4 py-3 font-medium text-ink-inverse`}
         >
           <Phone className="size-4" />
           {siteConfig.contact.phone}

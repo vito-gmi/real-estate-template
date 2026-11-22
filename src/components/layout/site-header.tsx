@@ -1,7 +1,8 @@
-import { Phone } from "lucide-react";
+import { KeyRound, Phone } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { siteConfig } from "@/config/site";
 import { FavoritesLink } from "@/features/favorites/favorites-link";
+import { getPublicSubmissionAvailability } from "@/features/submissions/availability";
 import type { Locale } from "@/i18n/routing";
 import { homePath, searchPath, staticPath } from "@/lib/routes";
 import { BrandLogo } from "./brand-logo";
@@ -9,7 +10,14 @@ import { LocaleSwitcher } from "./locale-switcher";
 import { MobileNav, type NavItem } from "./mobile-nav";
 
 export async function SiteHeader({ locale }: { locale: Locale }) {
-  const t = await getTranslations("nav");
+  const [t, submissions] = await Promise.all([
+    getTranslations("nav"),
+    getPublicSubmissionAvailability(),
+  ]);
+  // The owner-facing call to action, shown only while submissions are open.
+  const cta = submissions.open
+    ? { href: staticPath("submit", locale), label: t("listProperty") }
+    : undefined;
 
   const items: NavItem[] = [
     { href: searchPath(locale, { deal: "sale" }), label: t("buy") },
@@ -43,16 +51,25 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
+          {cta ? (
+            <a
+              href={cta.href}
+              className="mr-1 hidden items-center gap-2 rounded-control border border-brand px-3 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand-soft lg:inline-flex"
+            >
+              <KeyRound className="size-4" aria-hidden="true" />
+              {cta.label}
+            </a>
+          ) : null}
           <a
             href={siteConfig.contact.phoneHref}
-            className="hidden items-center gap-2 rounded-control px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink lg:inline-flex"
+            className="hidden items-center gap-2 rounded-control px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink xl:inline-flex"
           >
             <Phone className="size-4" />
             {siteConfig.contact.phone}
           </a>
           <FavoritesLink href={staticPath("favorites", locale)} />
           <LocaleSwitcher />
-          <MobileNav items={items} />
+          <MobileNav items={items} cta={cta} />
         </div>
       </div>
     </header>

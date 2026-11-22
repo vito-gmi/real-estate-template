@@ -12,6 +12,8 @@ import {
   locationLevels,
   mediaKinds,
   propertyKinds,
+  submissionStatuses,
+  submitterRoles,
   userRoles,
 } from '@/lib/domain/enums';
 
@@ -34,3 +36,5 @@ export const inquiryKindEnum = pgEnum('inquiry_kind', inquiryKinds);
 export const userRoleEnum = pgEnum('user_role', userRoles);
 export const locationLevelEnum = pgEnum('location_level', locationLevels);
 export const localeEnum = pgEnum('locale', ['bg', 'en']);
+export const submissionStatusEnum = pgEnum('submission_status', submissionStatuses);
+export const submitterRoleEnum = pgEnum('submitter_role', submitterRoles);

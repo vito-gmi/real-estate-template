@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, BadgeCheck, HandCoins, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BadgeCheck, HandCoins, KeyRound, ShieldCheck } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { siteConfig } from '@/config/site';
@@ -11,10 +11,11 @@ import {
   countPublishedListings,
 } from '@/features/listings/queries';
 import { HeroSearch } from '@/features/search/components/hero-search';
+import { getPublicSubmissionAvailability } from '@/features/submissions/availability';
 import { isLocale } from '@/i18n/routing';
 import { propertyKinds } from '@/lib/domain/enums';
 import { formatNumber } from '@/lib/format';
-import { searchPath } from '@/lib/routes';
+import { searchPath, staticPath, withQuery } from '@/lib/routes';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { JsonLd, organizationJsonLd } from '@/lib/seo/json-ld';
 import { deferIfBuildingWithoutDatabase } from '@/server/prerender';
@@ -45,13 +46,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale);
   await deferIfBuildingWithoutDatabase();
 
-  const [t, tEnum, featured, newest, cities, total] = await Promise.all([
+  const [t, tEnum, featured, newest, cities, total, submissions] = await Promise.all([
     getTranslations('home'),
     getTranslations('enums'),
     getShowcaseListings(locale, { featuredOnly: true, limit: 6 }),
     getShowcaseListings(locale, { limit: 6 }),
     getPopularCities(locale, 8),
     countPublishedListings(),
+    getPublicSubmissionAvailability(),
   ]);
 
   const showcase = featured.length >= 3 ? featured : newest;
@@ -146,6 +148,34 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <ValueProp icon={ShieldCheck} title={t('whySupportTitle')} text={t('whySupportText')} />
         </div>
       </section>
+
+      {submissions.open ? (
+        <section className="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 rounded-card border border-line bg-brand-soft p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex max-w-2xl gap-4">
+              <KeyRound className="mt-1 size-7 shrink-0 text-brand" aria-hidden="true" />
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-ink">{t('ownerTitle')}</h2>
+                <p className="mt-2 leading-relaxed text-ink-muted">{t('ownerText')}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href={withQuery(staticPath('submit', locale), { deal: 'sale' })}>
+                  {t('ownerSell')}
+                </Link>
+              </Button>
+              {siteConfig.features.rentals ? (
+                <Button asChild size="lg" variant="outline">
+                  <Link href={withQuery(staticPath('submit', locale), { deal: 'rent' })}>
+                    {t('ownerRent')}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

@@ -22,7 +22,9 @@
 
 ## Uploads
 
-The app never proxies original bytes. The browser PUTs to a short-lived presigned URL; a server action then runs `sharp` (MIME sniff, size cap, AVIF/WebP derivatives).
+The app never proxies original bytes. The browser PUTs to a short-lived presigned URL; a server action then runs `sharp` (MIME sniff, size cap, AVIF/WebP derivatives). Stored originals and derivatives carry no EXIF/GPS metadata.
+
+Visitor uploads (property submissions) go to a separate **private** bucket, never the public media bucket. Each presigned key is issued for one submission and bound to it by a signed token; the server decodes and re-encodes every file, strips metadata, and only staff can view the result (`/api/admin/submission-photos/[id]`, session-checked). Approval copies photos into public media through the normal pipeline. Abuse controls: honeypot, per-address and per-email rate limits, a photo cap per submission, Cloudflare Turnstile when configured, and a daily cleanup of abandoned uploads.
 
 ## Personal data
 

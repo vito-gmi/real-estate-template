@@ -3,7 +3,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import type { CoverImage } from '@/lib/domain/media';
 import { MAX_UPLOAD_BYTES, isAcceptedImageType } from '@/lib/domain/media';
 import { mediaKinds } from '@/lib/domain/enums';
 import { actionClient, actionErr, actionOk, type ActionResult } from '@/lib/safe-action';
@@ -13,8 +12,9 @@ import { revalidateListingCaches } from '@/server/cache';
 import { checkRateLimit, clientIp, hashIp } from '@/server/rate-limit';
 import { storage } from '@/server/adapters/storage';
 import { db } from '@/server/db/client';
-import { listings, media } from '@/server/db/schema';
+import { media } from '@/server/db/schema';
 import { recordAudit } from '@/server/repositories/audit';
+import { attachProcessedImage, syncCoverImage } from './attach';
 import { keysOf, processImage } from './pipeline';
 
 /**
@@ -102,31 +102,7 @@ export const attachMedia = actionClient
     // by content hash.
     await store.remove([parsedInput.uploadKey]);
 
-    const [orderRow] = await db
-      .select({
-        nextOrder: sql<number>`coalesce(max(${media.sortOrder}), -1) + 1`,
-      })
-      .from(media)
-      .where(and(eq(media.listingId, parsedInput.listingId), eq(media.kind, parsedInput.kind)));
-    const nextOrder = orderRow?.nextOrder ?? 0;
-
-    const [row] = await db
-      .insert(media)
-      .values({
-        listingId: parsedInput.listingId,
-        kind: parsedInput.kind,
-        storageKey: processed.storageKey,
-        contentType: processed.contentType,
-        bytes: processed.bytes,
-        width: processed.width,
-        height: processed.height,
-        blurDataUrl: processed.blurDataUrl,
-        variants: [...processed.variants],
-        sortOrder: Number(nextOrder ?? 0),
-      })
-      .returning({ id: media.id });
-
-    await syncCoverImage(parsedInput.listingId);
+    const row = await attachProcessedImage(parsedInput.listingId, processed, parsedInput.kind);
     revalidateListingCaches(parsedInput.listingId);
 
     await recordAudit({
@@ -138,7 +114,7 @@ export const attachMedia = actionClient
       ipHash: hashIp(await clientIp()),
     });
 
-    return actionOk({ id: row!.id });
+    return actionOk({ id: row.id });
   });
 
 export const reorderMedia = actionClient
@@ -223,35 +199,3 @@ export const updateMediaAlt = actionClient
     revalidateListingCaches(row.listingId);
     return actionOk({ id: row.id });
   });
-
-/**
- * Keeps the denormalised cover snapshot on the listing in step with the first
- * photo. This is the only writer of that column — the reason the listing grid
- * can render without touching the media table.
- */
-async function syncCoverImage(listingId: string): Promise<void> {
-  const [first] = await db
-    .select({
-      id: media.id,
-      width: media.width,
-      height: media.height,
-      blurDataUrl: media.blurDataUrl,
-      variants: media.variants,
-    })
-    .from(media)
-    .where(and(eq(media.listingId, listingId), eq(media.kind, 'photo')))
-    .orderBy(media.sortOrder)
-    .limit(1);
-
-  const cover: CoverImage | null = first
-    ? {
-        mediaId: first.id,
-        width: first.width,
-        height: first.height,
-        blurDataUrl: first.blurDataUrl,
-        variants: first.variants,
-      }
-    : null;
-
-  await db.update(listings).set({ coverImage: cover }).where(eq(listings.id, listingId));
-}

@@ -86,7 +86,7 @@ export function staticEntries(): SitemapEntry[] {
   for (const locale of locales) {
     entries.push({ loc: absolute(`/${locale}`), lastmod: now, changefreq: 'daily', priority: 1 });
 
-    for (const key of ['about', 'contact', 'privacy', 'terms'] as const) {
+    for (const key of ['about', 'contact', 'submit', 'privacy', 'terms'] as const) {
       entries.push({
         loc: absolute(staticPath(key, locale)),
         lastmod: now,

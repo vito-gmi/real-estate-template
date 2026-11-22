@@ -1,6 +1,6 @@
 # Architecture
 
-Estate Template is a bilingual (Bulgarian / English) property-listings platform. The public site is read-heavy and cached; the only write path is a staff admin console.
+Estate Template is a bilingual (Bulgarian / English) property-listings platform. The public site is read-heavy and cached. Writes come from the staff admin console and from two public forms: enquiries, and property submissions ("List your property", see [property-submissions.md](property-submissions.md)). Nothing a visitor sends is published without staff review.
 
 ## Request flow
 
@@ -26,7 +26,7 @@ src/
 ```
 
 - **Repository** — SQL stays in `server/repositories/*`. Use cases never import Drizzle.
-- **Adapter** — `StorageAdapter` (R2 / S3 / local disk) and `MailAdapter` (Resend / console). Swap them in env, not in feature code.
+- **Adapter** — `StorageAdapter` (R2 / S3 / local disk) and `MailAdapter` (Resend / console). Swap them in env, not in feature code. `storage()` is the public media bucket; `privateStorage()` is a separate, non-public bucket for files nobody has reviewed yet.
 - **Builder** — `SearchQueryBuilder` composes filter fragments into one query. Pagination is keyset (`published_at, id`), never `OFFSET`.
 - **Mapper** — DB rows become view models at the boundary. Hidden addresses never reach the client bundle.
 - **Result** — expected failures (`not_found`, `rate_limited`) are values; exceptions are bugs.
@@ -35,6 +35,10 @@ src/
 ## Caching
 
 `src/server/cache.ts` tags every public read. Publishing a listing calls `revalidateTag('listings')` with immediate expiry so the agent sees the change on the next request, while the previous HTML remains on the CDN if the origin is down.
+
+## Runtime settings
+
+`app_settings` holds switches staff change from **Admin → Settings** without a redeploy (currently: property submissions on/off, minimum photos, owner emails). Values are validated by a Zod schema with defaults, read through a cache tagged `settings`, and saving revalidates that tag.
 
 ## Auth
 
