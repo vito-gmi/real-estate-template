@@ -19,6 +19,7 @@ const CSV_COLUMNS = [
   'status',
   'price',
   'currency',
+  'showPrice',
   'area',
   'landArea',
   'rooms',
@@ -70,7 +71,8 @@ export function parseImportPayload(raw: string, filename: string): ListingFormVa
 
 function looksLikeCsv(raw: string): boolean {
   const first = raw.split('\n')[0] ?? '';
-  return first.includes('dealType') && first.includes('titleBg') && !first.trim().startsWith('{');
+  // A minified JSON array also has both keys on its first line.
+  return first.includes('dealType') && first.includes('titleBg') && !/^[[{]/.test(first.trim());
 }
 
 function parseJson(raw: string): ListingFormValues[] {
@@ -86,7 +88,11 @@ function parseJson(raw: string): ListingFormValues[] {
   }
 
   return list.map((item, index) => {
-    const result = listingFormSchema.safeParse(item);
+    const withVisibility =
+      item && typeof item === 'object' && !('showPrice' in item)
+        ? { ...item, showPrice: hasPrice((item as { price?: unknown }).price) }
+        : item;
+    const result = listingFormSchema.safeParse(withVisibility);
     if (!result.success) {
       throw new Error(`Listing ${index + 1} is invalid: ${result.error.issues[0]?.message ?? 'unknown'}`);
     }
@@ -100,7 +106,7 @@ function parseCsv(raw: string): ListingFormValues[] {
   if (!header) return [];
 
   const index = new Map(header.map((name, i) => [name.trim(), i]));
-  const required = ['dealType', 'propertyKind', 'price', 'locationId', 'titleBg', 'titleEn'];
+  const required = ['dealType', 'propertyKind', 'locationId', 'titleBg', 'titleEn'];
   for (const name of required) {
     if (!index.has(name)) throw new Error(`CSV is missing column "${name}".`);
   }
@@ -108,12 +114,14 @@ function parseCsv(raw: string): ListingFormValues[] {
   return rows.slice(1).filter((row) => row.some((cell) => cell.trim())).map((row, indexNumber) => {
     const get = (name: string) => row[index.get(name) ?? -1]?.trim() ?? '';
     const features = get('featureKeys');
+    const price = get('price');
     const input = {
       dealType: get('dealType'),
       propertyKind: get('propertyKind'),
       status: get('status') || 'draft',
-      price: get('price'),
+      price: price || undefined,
       currency: get('currency') || 'EUR',
+      showPrice: get('showPrice') ? parseFlag(get('showPrice')) : hasPrice(price),
       area: get('area') || undefined,
       landArea: get('landArea') || undefined,
       rooms: get('rooms') || undefined,
@@ -139,6 +147,19 @@ function parseCsv(raw: string): ListingFormValues[] {
     }
     return result.data;
   });
+}
+
+/**
+ * Files exported before prices could be hidden have no `showPrice` (and a
+ * spreadsheet may leave the cell blank). Those prices were public, so they stay
+ * public rather than all turning into "price on request" on re-import.
+ */
+function hasPrice(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function parseFlag(value: string): boolean {
+  return ['true', '1', 'yes'].includes(value.trim().toLowerCase());
 }
 
 /** RFC 4180 splitter that understands quoted cells. */

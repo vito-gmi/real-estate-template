@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { getTranslations } from 'next-intl/server';
 import { siteConfig } from '@/config/site';
 import { getListingBySlug } from '@/features/listings/queries';
 import type { Locale } from '@/i18n/routing';
@@ -46,6 +47,7 @@ export async function renderListingOgImage(locale: Locale, slug: string) {
   }
 
   const { listing } = result;
+  const t = await getTranslations({ locale, namespace: 'listing' });
   const cover = listing.cover ? fallbackSrc(listing.cover.variants) : null;
   const coverUrl = cover?.startsWith('http') ? cover : cover ? absolute(cover) : null;
   const place = [listing.city?.name, listing.district?.name].filter(Boolean).join(', ');
@@ -88,7 +90,9 @@ export async function renderListingOgImage(locale: Locale, slug: string) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, color: '#e9b872' }}>
-              {formatPrice(locale, listing.price.amount, listing.price.currency)}
+              {listing.price
+                ? formatPrice(locale, listing.price.amount, listing.price.currency)
+                : t('priceOnRequest')}
             </div>
             <div style={{ display: 'flex', gap: 28, fontSize: 26, color: '#9fb0c6' }}>
               {area ? <span>{formatArea(locale, area)}</span> : null}

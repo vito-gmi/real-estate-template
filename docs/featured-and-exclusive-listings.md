@@ -9,7 +9,7 @@ Every listing has two independent on/off switches in the admin form: **Featured 
 | Who decides         | The agency, freely                                | Set by the signed agreement — switch it on only when one exists |
 | Visible effect      | Home-page showcase + **Top** badge on cards       | **Exclusive** badge on the property's own page                  |
 
-Both can be on at the same time, and neither changes the price, the search ranking, or who can see the listing.
+Both can be on at the same time, and neither changes the price, the search ranking, or who can see the listing. One exception: a featured or exclusive listing whose price is hidden still appears when a visitor filters by price (see [Price on request](price-on-request.md)).
 
 ## Featured listing — "promote this"
 
@@ -37,7 +37,7 @@ On the Bulgarian market an *ексклузивна оферта* means the owner
 
 - An **"Exclusive" badge** at the top of the property's own detail page.
 
-That is the only place today. It is not shown on cards, cannot be searched or filtered, and does not affect the home page.
+That is the only place it is shown. It is not shown on cards, cannot be filtered on, and does not affect the home page. It does keep a listing with a hidden price in price-filtered searches (see [Price on request](price-on-request.md)).
 
 **When to use it:** only when a signed exclusive agreement exists. Marking a property exclusive without one misleads clients and other agents.
 
@@ -52,7 +52,7 @@ That is the only place today. It is not shown on cards, cannot be searched or fi
 - **Badges are not translated.** The card badge always reads "Top" and the detail-page badge "Exclusive", in English, on both language versions (`src/features/listings/components/listing-card.tsx`, `src/features/listings/pages/detail-page.tsx`). The form labels are translated.
 - **CSV import drops both flags.** Export includes them, but import always sets both to off, so an export → import round trip loses them (`src/features/admin/import-export.ts`).
 - **Home-page fallback is invisible.** With fewer than 3 featured listings, visitors see "Featured properties" filled with ordinary newest listings.
-- **Exclusive has no presence in search.** No badge on cards, no filter.
+- **Exclusive is barely visible in search.** No badge on cards and no filter; it only keeps a listing with a hidden price in price-filtered results.
 
 ## Technical reference
 

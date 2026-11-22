@@ -294,7 +294,7 @@ export async function ListingDetailPage({ params, searchParams, segmentLocale }:
             </section>
           ) : null}
 
-          {siteConfig.features.mortgageCalculator && listing.dealType === 'sale' ? (
+          {siteConfig.features.mortgageCalculator && listing.dealType === 'sale' && listing.price ? (
             <MortgageCalculator price={listing.price.amount} currency={listing.price.currency} />
           ) : null}
         </div>
@@ -303,12 +303,18 @@ export async function ListingDetailPage({ params, searchParams, segmentLocale }:
           <div className="space-y-4 rounded-card border border-line bg-surface p-5 shadow-card">
             <div>
               <p className="text-3xl font-semibold tracking-tight text-ink">
-                {formatPrice(locale, listing.price.amount, listing.price.currency)}
-                {listing.dealType === 'rent' ? (
-                  <span className="ml-1 text-base font-normal text-ink-muted">/{t('monthly')}</span>
-                ) : null}
+                {listing.price ? (
+                  <>
+                    {formatPrice(locale, listing.price.amount, listing.price.currency)}
+                    {listing.dealType === 'rent' ? (
+                      <span className="ml-1 text-base font-normal text-ink-muted">/{t('monthly')}</span>
+                    ) : null}
+                  </>
+                ) : (
+                  t('priceOnRequest')
+                )}
               </p>
-              {listing.price.perSqmEur ? (
+              {listing.price?.perSqmEur ? (
                 <p className="mt-1 text-sm text-ink-muted">
                   {formatPricePerSqm(locale, listing.price.perSqmEur)}
                 </p>
@@ -396,7 +402,7 @@ function buildSpecs(
     add(
       t('maintenanceFee'),
       listing.maintenanceFee
-        ? `${formatPrice(locale, listing.maintenanceFee, listing.price.currency)} / ${t('monthly')}`
+        ? `${formatPrice(locale, listing.maintenanceFee, listing.price?.currency)} / ${t('monthly')}`
         : null,
     );
     add(

@@ -3,6 +3,7 @@ import { siteConfig } from '@/config/site';
 import { searchListings } from '@/features/listings/queries';
 import { parseSearchFilters } from '@/features/search/params';
 import { hasLocale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { routing, type Locale } from '@/i18n/routing';
 import { formatPrice } from '@/lib/format';
 import { fallbackSrc } from '@/lib/media-url';
@@ -44,7 +45,10 @@ export async function GET(
   const dealType = searchParams.deal === 'rent' ? 'rent' : 'sale';
 
   const filters = parseSearchFilters({ dealType, searchParams });
-  const page = await searchListings(locale, filters, undefined, FEED_SIZE);
+  const [page, t] = await Promise.all([
+    searchListings(locale, filters, undefined, FEED_SIZE),
+    getTranslations({ locale, namespace: 'listing' }),
+  ]);
 
   const title = `${siteConfig.name} — ${dealType === 'sale' ? 'sale' : 'rent'}`;
   const selfUrl = absolute(`${url.pathname}${url.search}`);
@@ -55,7 +59,9 @@ export async function GET(
       const image = listing.cover ? fallbackSrc(listing.cover.variants) : null;
       const place = [listing.city?.name, listing.district?.name].filter(Boolean).join(', ');
       const description = [
-        formatPrice(locale, listing.price.amount, listing.price.currency),
+        listing.price
+          ? formatPrice(locale, listing.price.amount, listing.price.currency)
+          : t('priceOnRequest'),
         place,
         `ID ${listing.reference}`,
       ]

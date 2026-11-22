@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, sql, type SQL } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { publicListingStatuses, type SortOption } from '@/lib/domain/enums';
 import { listingTranslations, listings } from '@/server/db/schema';
@@ -18,7 +18,7 @@ import type { SearchFilters } from './types';
  */
 
 type FilterRule = {
-  readonly key: keyof SearchFilters | 'location';
+  readonly key: keyof SearchFilters | 'location' | 'price';
   readonly apply: (filters: SearchFilters, locale: 'bg' | 'en') => SQL | undefined;
 };
 
@@ -43,12 +43,23 @@ const filterRules: readonly FilterRule[] = [
     },
   },
   {
-    key: 'priceMin',
-    apply: (filters) => (filters.priceMin ? gte(listings.priceEur, filters.priceMin) : undefined),
-  },
-  {
-    key: 'priceMax',
-    apply: (filters) => (filters.priceMax ? lte(listings.priceEur, filters.priceMax) : undefined),
+    key: 'price',
+    apply: (filters) => {
+      if (!filters.priceMin && !filters.priceMax) return undefined;
+      // `price_eur` is null when the price is hidden, so those listings fall out
+      // of the range on their own. Featured and exclusive ones are kept: the
+      // agency wants them seen in every search. They are kept regardless of the
+      // stored amount, so the result set says nothing about a hidden price.
+      const inRange = and(
+        filters.priceMin ? gte(listings.priceEur, filters.priceMin) : undefined,
+        filters.priceMax ? lte(listings.priceEur, filters.priceMax) : undefined,
+      )!;
+      const promotedWithoutPrice = and(
+        sql`${listings.priceEur} is null`,
+        or(eq(listings.isFeatured, true), eq(listings.isExclusive, true)),
+      )!;
+      return or(inRange, promotedWithoutPrice);
+    },
   },
   {
     key: 'areaMin',
@@ -187,7 +198,8 @@ type SortDefinition = {
 
 export type SortRowValues = {
   readonly publishedAt: Date | null;
-  readonly priceEur: number | null;
+  readonly sortPriceAsc: number;
+  readonly sortPriceDesc: number;
   readonly sortArea: number;
   readonly sortPricePerSqm: number;
 };
@@ -203,15 +215,15 @@ const sortDefinitions: Readonly<Record<SortOption, SortDefinition>> = {
     toSqlValue: timestamp,
   },
   price_asc: {
-    column: listings.priceEur,
+    column: listings.sortPriceAsc,
     direction: 'asc',
-    toCursorValue: (row) => String(row.priceEur ?? 0),
+    toCursorValue: (row) => String(row.sortPriceAsc),
     toSqlValue: numeric,
   },
   price_desc: {
-    column: listings.priceEur,
+    column: listings.sortPriceDesc,
     direction: 'desc',
-    toCursorValue: (row) => String(row.priceEur ?? 0),
+    toCursorValue: (row) => String(row.sortPriceDesc),
     toSqlValue: numeric,
   },
   area_desc: {

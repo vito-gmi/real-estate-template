@@ -4,7 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Locale } from '@/i18n/routing';
-import { formatDate, formatNumber, formatPrice } from '@/lib/format';
+import { AdminPrice } from '@/features/admin/components/admin-price';
+import { formatDate, formatNumber } from '@/lib/format';
 import { adminPath } from '@/lib/routes';
 import {
   countListingsByStatus,
@@ -77,7 +78,13 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                   {row.title}
                 </span>
                 <span className="text-sm text-ink-muted">
-                  {formatPrice(locale, row.price, row.currency)}
+                  <AdminPrice
+                    locale={locale}
+                    price={row.price}
+                    currency={row.currency}
+                    showPrice={row.showPrice}
+                    hiddenLabel={t('price.hidden')}
+                  />
                 </span>
                 <Badge tone={row.status === 'active' ? 'success' : 'neutral'}>
                   {tEnum(`status.${row.status}`)}

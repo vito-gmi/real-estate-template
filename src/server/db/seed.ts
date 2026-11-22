@@ -388,6 +388,9 @@ async function main() {
       dealType === "sale"
         ? Math.round(rawPrice / 500) * 500
         : Math.max(150, Math.round(rawPrice / 10) * 10);
+    // Some listings are "price on request": a few keep a stored price behind
+    // the switch, the rest never had one.
+    const pricing = pickWeighted({ shown: 80, hidden: 12, none: 8 });
 
     const rooms = profile.hasRooms ? between(1, 5) : null;
     const bedrooms = rooms ? Math.max(1, rooms - 1) : null;
@@ -433,8 +436,9 @@ async function main() {
         dealType,
         propertyKind: kind,
         status,
-        price,
+        price: pricing === "none" ? null : price,
         currency: "EUR",
+        showPrice: pricing === "shown",
         area,
         landArea,
         rooms,

@@ -35,6 +35,44 @@ describe('listing import/export', () => {
     expect(parsed[0]?.price).toBe(120000);
   });
 
+  it('keeps a hidden price hidden, and keeps the amount, in both formats', () => {
+    const hidden = { ...sample, showPrice: false };
+    for (const [payload, name] of [
+      [recordsToJson([hidden]), 'listings.json'],
+      [recordsToCsv([hidden]), 'listings.csv'],
+    ] as const) {
+      const [parsed] = parseImportPayload(payload, name);
+      expect(parsed?.showPrice).toBe(false);
+      expect(parsed?.price).toBe(120000);
+    }
+  });
+
+  it('shows the price of files exported before prices could be hidden', () => {
+    const legacyCsv = recordsToCsv([sample])
+      .split('\n')
+      .map((line) => line.split(',').filter((_, index) => index !== 6).join(','))
+      .join('\n');
+    expect(legacyCsv.split('\n')[0]).not.toContain('showPrice');
+    expect(parseImportPayload(legacyCsv, 'listings.csv')[0]?.showPrice).toBe(true);
+
+    const legacyJson = JSON.stringify({ listings: [sample] });
+    expect(parseImportPayload(legacyJson, 'listings.json')[0]?.showPrice).toBe(true);
+  });
+
+  it('imports a listing without a price as price on request', () => {
+    const { price: _price, ...withoutPrice } = sample;
+    const [parsed] = parseImportPayload(JSON.stringify([withoutPrice]), 'listings.json');
+    expect(parsed?.price).toBeUndefined();
+    expect(parsed?.showPrice).toBe(false);
+  });
+
+  it('rejects a shown price that is missing', () => {
+    const { price: _price, ...withoutPrice } = sample;
+    expect(() =>
+      parseImportPayload(JSON.stringify([{ ...withoutPrice, showPrice: true }]), 'listings.json'),
+    ).toThrow(/admin\.errors\.price/);
+  });
+
   it('splits quoted CSV cells', () => {
     expect(splitCsv('a,"b,c",d\n1,2,3')).toEqual([
       ['a', 'b,c', 'd'],

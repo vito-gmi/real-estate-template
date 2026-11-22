@@ -5,6 +5,7 @@ import type {
   ListingDetailDto,
   ListingFeatureDto,
   ListingPhotoDto,
+  ListingPrice,
   PlaceRef,
 } from './dto';
 
@@ -19,6 +20,8 @@ import type {
  *    "not rendering it" would still ship it inside the RSC payload.
  * 2. Only the fields declared on the DTO survive; anything else in the row —
  *    internal notes, author ids — is left behind by construction.
+ * 3. When `showPrice` is off, the whole price is dropped, per-m² figure
+ *    included, even though the row still carries the stored amount.
  */
 
 /** ~0.003° ≈ 300 m in Bulgaria; enough to show the neighbourhood, not the door. */
@@ -49,8 +52,9 @@ export type ListingCardRow = {
   dealType: ListingCardDto['dealType'];
   propertyKind: ListingCardDto['kind'];
   status: ListingCardDto['status'];
-  price: number;
-  currency: ListingCardDto['price']['currency'];
+  price: number | null;
+  currency: ListingPrice['currency'];
+  showPrice: boolean;
   priceEur: number | null;
   pricePerSqmEur: number | null;
   area: number | null;
@@ -69,6 +73,16 @@ export type ListingCardRow = {
   district: LocationNames | null;
 };
 
+function toPrice(row: ListingCardRow): ListingPrice | null {
+  if (!row.showPrice || row.price === null) return null;
+  return {
+    amount: row.price,
+    currency: row.currency,
+    eur: row.priceEur ?? row.price,
+    perSqmEur: row.pricePerSqmEur,
+  };
+}
+
 export function toListingCard(locale: Locale, row: ListingCardRow): ListingCardDto {
   return {
     id: row.id,
@@ -78,12 +92,7 @@ export function toListingCard(locale: Locale, row: ListingCardRow): ListingCardD
     dealType: row.dealType,
     kind: row.propertyKind,
     status: row.status,
-    price: {
-      amount: row.price,
-      currency: row.currency,
-      eur: row.priceEur ?? row.price,
-      perSqmEur: row.pricePerSqmEur,
-    },
+    price: toPrice(row),
     area: row.area,
     landArea: row.landArea,
     rooms: row.rooms,

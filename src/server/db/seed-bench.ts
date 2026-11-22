@@ -92,6 +92,7 @@ async function main() {
         price:
           dealType === "sale" ? between(40_000, 900_000) : between(300, 4_000),
         currency: "EUR" as const,
+        showPrice: random() < 0.85,
         area,
         rooms: between(1, 6),
         bedrooms: between(1, 4),

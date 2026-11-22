@@ -48,8 +48,10 @@ export function listingColumns(
     dealType: values.dealType,
     propertyKind: values.propertyKind,
     status: values.status,
-    price: values.price,
+    // Written even when hidden: hiding a price must not lose it.
+    price: values.price ?? null,
     currency: values.currency,
+    showPrice: values.showPrice,
     area: values.area ?? null,
     landArea: values.landArea ?? null,
     rooms: values.rooms ?? null,
