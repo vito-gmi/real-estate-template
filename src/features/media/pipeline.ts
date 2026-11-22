@@ -66,7 +66,11 @@ export async function processImage(
   storage: StorageAdapter,
   input: Buffer,
 ): Promise<ProcessedImage> {
-  const normalized = sharp(input, { failOn: 'error' }).rotate().withMetadata({});
+  // No `withMetadata()`: sharp strips EXIF/XMP/IPTC by default, and
+  // `withMetadata()` would copy all of it — GPS included — into the stored
+  // original, which shares its content hash (and so its URL prefix) with the
+  // public derivatives.
+  const normalized = sharp(input, { failOn: 'error' }).rotate();
   const metadata = await normalized.metadata();
 
   if (!metadata.width || !metadata.height) {
