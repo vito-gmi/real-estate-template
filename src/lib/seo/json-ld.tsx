@@ -87,8 +87,10 @@ export function listingJsonLd(
     ...(images.length > 0 ? { image: images.slice(0, 8) } : {}),
     offers: {
       '@type': 'Offer',
-      price: listing.price.amount,
-      priceCurrency: listing.price.currency,
+      // "Price on request" listings carry no price at all, not a placeholder.
+      ...(listing.price
+        ? { price: listing.price.amount, priceCurrency: listing.price.currency }
+        : {}),
       availability,
       businessFunction:
         listing.dealType === 'sale'

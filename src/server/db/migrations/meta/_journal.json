@@ -29,6 +29,13 @@
       "when": 1795288880500,
       "tag": "0003_account_issuer_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795344003251,
+      "tag": "0004_optional_price",
+      "breakpoints": true
     }
   ]
 }

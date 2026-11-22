@@ -28,8 +28,9 @@ export type AdminListingRow = {
   status: ListingStatus;
   dealType: (typeof listings.$inferSelect)['dealType'];
   propertyKind: (typeof listings.$inferSelect)['propertyKind'];
-  price: number;
+  price: number | null;
   currency: (typeof listings.$inferSelect)['currency'];
+  showPrice: boolean;
   title: string;
   slug: string;
   cityName: string | null;
@@ -71,6 +72,7 @@ export async function listAdminListings(
         propertyKind: listings.propertyKind,
         price: listings.price,
         currency: listings.currency,
+        showPrice: listings.showPrice,
         title: listingTranslations.title,
         slug: listingTranslations.slug,
         cityName: locale === 'bg' ? locations.nameBg : locations.nameEn,
@@ -235,8 +237,9 @@ export type ExportListingRecord = {
   readonly dealType: (typeof listings.$inferSelect)['dealType'];
   readonly propertyKind: (typeof listings.$inferSelect)['propertyKind'];
   readonly status: (typeof listings.$inferSelect)['status'];
-  readonly price: number;
+  readonly price: number | null;
   readonly currency: (typeof listings.$inferSelect)['currency'];
+  readonly showPrice: boolean;
   readonly area: number | null;
   readonly landArea: number | null;
   readonly rooms: number | null;
@@ -311,6 +314,7 @@ export async function listListingsForExport(): Promise<readonly ExportListingRec
       status: row.status,
       price: row.price,
       currency: row.currency,
+      showPrice: row.showPrice,
       area: row.area,
       landArea: row.landArea,
       rooms: row.rooms,

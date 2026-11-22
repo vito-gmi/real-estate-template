@@ -25,6 +25,33 @@ test.describe('public site', () => {
     await expect(page.getByRole('form')).toBeVisible();
   });
 
+  test('listings with a hidden price say "Price on request" and publish no price', async ({ page }) => {
+    await page.goto('/en/for-sale');
+    const card = page.locator('article', { hasText: 'Price on request' }).first();
+    await expect(card).toBeVisible({ timeout: 15_000 });
+
+    await card.getByRole('heading').getByRole('link').click();
+    await expect(page).toHaveURL(/\/en\/property\//);
+    await expect(page.getByText('Price on request').first()).toBeVisible();
+
+    // Search engines must not be handed the price either.
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
+    const listing = blocks
+      .map((text) => JSON.parse(text) as { '@type'?: string; offers?: Record<string, unknown> })
+      .find((block) => block['@type'] === 'RealEstateListing');
+    expect(listing?.offers).toBeDefined();
+    expect(listing?.offers).not.toHaveProperty('price');
+  });
+
+  test('a price range keeps featured and exclusive listings without a price', async ({ page }) => {
+    await page.goto('/en/for-sale?priceMin=150000&priceMax=250000');
+    await expect(page.locator('article').first()).toBeVisible({ timeout: 15_000 });
+    // Only featured or exclusive listings may appear in a price range without a price.
+    const unpriced = page.locator('article', { hasText: 'Price on request' });
+    await expect(unpriced.first()).toBeVisible();
+    await expect(unpriced.and(page.locator('article:not([data-promoted])'))).toHaveCount(0);
+  });
+
   test('favorites page is reachable', async ({ page }) => {
     await page.goto('/en/favorites');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

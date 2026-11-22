@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Locale } from "@/i18n/routing";
 import { listingStatuses, type ListingStatus } from "@/lib/domain/enums";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { adminPath, listingPath } from "@/lib/routes";
 import type { AdminListingRow } from "@/server/repositories/admin-listings";
+import { AdminPrice } from "./admin-price";
 import {
   bulkChangeListingStatus,
   bulkDeleteListings,
@@ -192,7 +193,13 @@ export function ListingsTable({
                   </div>
                 </td>
                 <td className="p-3 whitespace-nowrap text-ink">
-                  {formatPrice(locale, row.price, row.currency)}
+                  <AdminPrice
+                    locale={locale}
+                    price={row.price}
+                    currency={row.currency}
+                    showPrice={row.showPrice}
+                    hiddenLabel={t("price.hidden")}
+                  />
                 </td>
                 <td className="p-3 text-ink-muted">{row.photoCount}</td>
                 <td className="p-3">

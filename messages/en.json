@@ -122,6 +122,7 @@
     "similar": "Similar properties",
     "similarSubtitle": "Other listings you may like",
     "pricePerSqm": "Price per m²",
+    "priceOnRequest": "Price on request",
     "totalArea": "Area",
     "landArea": "Plot area",
     "rooms": "Rooms",
@@ -420,6 +421,14 @@
       "address": "Address",
       "coordinates": "Coordinates",
       "pickOnMap": "Pick a point on the map"
+    },
+    "price": {
+      "set": "Set price",
+      "show": "Show price",
+      "hide": "Hide price",
+      "hidden": "Hidden",
+      "hiddenStored": "hidden from visitors",
+      "hiddenEmpty": "Not set. Visitors see “{label}”."
     },
     "media": {
       "title": "Media",

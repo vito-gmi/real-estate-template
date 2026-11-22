@@ -50,6 +50,7 @@ const cardColumns = {
   status: listings.status,
   price: listings.price,
   currency: listings.currency,
+  showPrice: listings.showPrice,
   priceEur: listings.priceEur,
   pricePerSqmEur: listings.pricePerSqmEur,
   area: listings.area,
@@ -64,6 +65,8 @@ const cardColumns = {
   publishedAt: listings.publishedAt,
   title: listingTranslations.title,
   slug: listingTranslations.slug,
+  sortPriceAsc: listings.sortPriceAsc,
+  sortPriceDesc: listings.sortPriceDesc,
   sortArea: listings.sortArea,
   sortPricePerSqm: listings.sortPricePerSqm,
   city: {
@@ -80,7 +83,14 @@ const cardColumns = {
   },
 } as const;
 
-type CardQueryRow = ListingCardRow & { sortArea: number; sortPricePerSqm: number };
+type SortKeys = {
+  sortPriceAsc: number;
+  sortPriceDesc: number;
+  sortArea: number;
+  sortPricePerSqm: number;
+};
+
+type CardQueryRow = ListingCardRow & SortKeys;
 
 /**
  * Base card query: listing + its translation for the active locale + the two
@@ -156,7 +166,8 @@ export async function searchListings(
           id: last.id,
           value: cursorValueOf(filters.sort, {
             publishedAt: last.publishedAt,
-            priceEur: last.priceEur,
+            sortPriceAsc: last.sortPriceAsc,
+            sortPriceDesc: last.sortPriceDesc,
             sortArea: last.sortArea,
             sortPricePerSqm: last.sortPricePerSqm,
           }),
@@ -270,18 +281,18 @@ export type ListingDetailResult = {
   readonly internal: {
     readonly id: string;
     readonly cityId: string | null;
-    readonly priceEur: number;
+    /** Null when the price is hidden; never the stored amount. */
+    readonly priceEur: number | null;
     readonly kind: PropertyKind;
     readonly dealType: DealType;
   };
 };
 
-type DetailQueryRow = ListingDetailRow & {
-  locationId: string;
-  cityId: string | null;
-  sortArea: number;
-  sortPricePerSqm: number;
-};
+type DetailQueryRow = ListingDetailRow &
+  SortKeys & {
+    locationId: string;
+    cityId: string | null;
+  };
 
 async function loadListingDetail(
   locale: Locale,
@@ -335,7 +346,7 @@ async function loadListingDetail(
     internal: {
       id: row.id,
       cityId: row.cityId,
-      priceEur: row.priceEur ?? row.price,
+      priceEur: row.priceEur,
       kind: row.propertyKind,
       dealType: row.dealType,
     },
@@ -360,7 +371,10 @@ export async function getListingById(
   return loadListingDetail(locale, and(eq(listings.id, id), visibility)!);
 }
 
-/** Same deal type, same kind, same city, comparable price — closest first. */
+/**
+ * Same deal type, same kind, same city, comparable price — closest first.
+ * Without a public price to compare, the newest matches come first instead.
+ */
 export async function getSimilarListings(
   locale: Locale,
   reference: ListingDetailResult['internal'],
@@ -376,7 +390,11 @@ export async function getSimilarListings(
 
   const rows = (await cardsFrom(locale)
     .where(and(...conditions))
-    .orderBy(sql`abs(${listings.priceEur} - ${reference.priceEur})`)
+    .orderBy(
+      ...(reference.priceEur === null
+        ? [desc(listings.publishedAt), desc(listings.id)]
+        : [sql`abs(${listings.priceEur} - ${reference.priceEur}) nulls last`, desc(listings.id)]),
+    )
     .limit(limit)) as CardQueryRow[];
 
   return rows.map((row) => toListingCard(locale, row));

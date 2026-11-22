@@ -51,7 +51,7 @@ export function CompareView() {
     {
       label: tListing('pricePerSqm'),
       render: (listing) =>
-        listing.price.perSqmEur ? formatPricePerSqm(locale, listing.price.perSqmEur) : '—',
+        listing.price?.perSqmEur ? formatPricePerSqm(locale, listing.price.perSqmEur) : '—',
     },
     {
       label: tListing('rooms'),
@@ -138,7 +138,9 @@ export function CompareView() {
                         {listing.title}
                       </Link>
                       <p className="mt-1 text-left text-lg font-semibold text-ink">
-                        {formatPrice(locale, listing.price.amount, listing.price.currency)}
+                        {listing.price
+                          ? formatPrice(locale, listing.price.amount, listing.price.currency)
+                          : tListing('priceOnRequest')}
                       </p>
                     </div>
                   </th>

@@ -38,7 +38,8 @@ export type ListingCardDto = {
   readonly dealType: DealType;
   readonly kind: PropertyKind;
   readonly status: ListingStatus;
-  readonly price: ListingPrice;
+  /** Null when the agency hides the price ("price on request"). */
+  readonly price: ListingPrice | null;
   readonly area: number | null;
   readonly landArea: number | null;
   readonly rooms: number | null;

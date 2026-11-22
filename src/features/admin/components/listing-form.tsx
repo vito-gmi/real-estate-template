@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Loader2, Save } from 'lucide-react';
+import { Check, Eye, EyeOff, Loader2, Plus, Save } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useTranslations } from 'next-intl';
-import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
+import { useLocale, useTranslations } from 'next-intl';
+import { Controller, useForm, useWatch, type Control, type FieldPath } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, Label } from '@/components/ui/label';
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { Locale } from '@/i18n/routing';
+import { formatPrice } from '@/lib/format';
 import type { FeatureOption } from '@/server/repositories/features';
 import type { LocationNode } from '@/server/repositories/locations';
 import {
@@ -182,22 +184,10 @@ export function ListingForm({
               />
             </div>
 
+            <PriceFields form={form} error={errorFor('price')} />
+
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field
-                label={t('fields.price')}
-                htmlFor="price"
-                required
-                error={errorFor('price')}
-              >
-                <Input id="price" inputMode="decimal" {...form.register('price')} />
-              </Field>
-              <SelectField
-                control={form.control}
-                name="currency"
-                label={t('fields.currency')}
-                options={currencies.map((value) => ({ value, label: value }))}
-              />
-              <Field label={tField('video')} htmlFor="videoUrl">
+              <Field label={tField('video')} htmlFor="videoUrl" className="sm:col-span-2">
                 <Input id="videoUrl" type="url" placeholder="https://" {...form.register('videoUrl')} />
               </Field>
             </div>
@@ -449,6 +439,92 @@ function toNumber(value: unknown): number | undefined {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
+}
+
+/**
+ * Price, shown or hidden.
+ *
+ * A listing starts as "price on request". "Set price" reveals the inputs;
+ * "Hide price" collapses them but keeps the amount in the form, so it is saved
+ * and comes back when the price is shown again. The input is unmounted rather
+ * than `disabled`, because React Hook Form submits disabled fields as
+ * `undefined`, which would erase the stored price.
+ */
+function PriceFields({
+  form,
+  error,
+}: {
+  form: ReturnType<typeof useForm<ListingFormInput>>;
+  error?: string;
+}) {
+  const t = useTranslations('admin');
+  const tListing = useTranslations('listing');
+  const locale = useLocale() as Locale;
+  const [showPrice, price, currency] = useWatch({
+    control: form.control,
+    name: ['showPrice', 'price', 'currency'],
+  });
+  // Focus the input only when an agent just asked for it, not on page load.
+  const [justShown, setJustShown] = useState(false);
+
+  const stored = toNumber(typeof price === 'string' ? price.replace(/\s/g, '') : price);
+  const hasStoredPrice = stored !== undefined && stored > 0;
+
+  function setShown(next: boolean) {
+    form.setValue('showPrice', next, { shouldDirty: true });
+    if (!next) form.clearErrors('price');
+    setJustShown(next);
+  }
+
+  if (!showPrice) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-dashed border-line-strong px-4 py-3">
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-ink">{t('fields.price')}</p>
+          <p className="text-sm text-ink-muted">
+            {hasStoredPrice ? (
+              <>
+                <span className="text-ink">{formatPrice(locale, stored, currency ?? 'EUR')}</span>
+                {' · '}
+                {t('price.hiddenStored')}
+              </>
+            ) : (
+              t('price.hiddenEmpty', { label: tListing('priceOnRequest') })
+            )}
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => setShown(true)}>
+          {hasStoredPrice ? <Eye /> : <Plus />}
+          {hasStoredPrice ? t('price.show') : t('price.set')}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid items-start gap-4 sm:grid-cols-3">
+      <Field label={t('fields.price')} htmlFor="price" required error={error}>
+        <Input
+          id="price"
+          inputMode="decimal"
+          autoFocus={justShown}
+          {...form.register('price')}
+        />
+      </Field>
+      <SelectField
+        control={form.control}
+        name="currency"
+        label={t('fields.currency')}
+        options={currencies.map((value) => ({ value, label: value }))}
+      />
+      <div className="sm:pt-7">
+        <Button type="button" variant="ghost" size="md" onClick={() => setShown(false)}>
+          <EyeOff />
+          {t('price.hide')}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function NumberField({

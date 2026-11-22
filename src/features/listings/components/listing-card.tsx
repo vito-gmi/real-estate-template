@@ -52,7 +52,9 @@ export function ListingCard({
     : listing.landArea;
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-shadow duration-200 hover:shadow-card-hover">
+    <article
+      data-promoted={listing.isFeatured || listing.isExclusive ? "" : undefined}
+      className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition-shadow duration-200 hover:shadow-card-hover">
       <div className="relative">
         <div className="relative aspect-[4/3] overflow-hidden bg-surface-sunken">
           {listing.cover ? (
@@ -109,18 +111,24 @@ export function ListingCard({
         <div className="pointer-events-none relative z-10 flex flex-1 flex-col gap-3">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-xl font-semibold tracking-tight text-ink">
-              {formatPrice(
-                locale,
-                listing.price.amount,
-                listing.price.currency,
+              {listing.price ? (
+                <>
+                  {formatPrice(
+                    locale,
+                    listing.price.amount,
+                    listing.price.currency,
+                  )}
+                  {listing.dealType === "rent" ? (
+                    <span className="ml-1 text-sm font-normal text-ink-muted">
+                      /{t("monthly")}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                t("priceOnRequest")
               )}
-              {listing.dealType === "rent" ? (
-                <span className="ml-1 text-sm font-normal text-ink-muted">
-                  /{t("monthly")}
-                </span>
-              ) : null}
             </p>
-            {listing.price.perSqmEur && listing.dealType === "sale" ? (
+            {listing.price?.perSqmEur && listing.dealType === "sale" ? (
               <p className="shrink-0 text-xs text-ink-subtle">
                 {formatPricePerSqm(locale, listing.price.perSqmEur)}
               </p>

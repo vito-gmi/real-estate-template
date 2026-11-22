@@ -40,8 +40,11 @@ export const listingFormSchema = z
     propertyKind: z.enum(propertyKinds),
     status: z.enum(listingStatuses).default('draft'),
 
-    price: z.coerce.number<number>().positive('admin.errors.price'),
+    // Optional, and hidden unless `showPrice` is on. Hiding keeps the amount so
+    // turning the price back on restores it.
+    price: optionalNumber,
     currency: z.enum(currencies).default('EUR'),
+    showPrice: z.boolean().default(false),
 
     area: optionalNumber,
     landArea: optionalNumber,
@@ -85,6 +88,10 @@ export const listingFormSchema = z
 
     featureKeys: z.array(z.string()).default([]),
   })
+  .refine(
+    (value) => (value.price === undefined ? !value.showPrice : value.price > 0),
+    { message: 'admin.errors.price', path: ['price'] },
+  )
   .refine((value) => value.floor === undefined || value.floorsTotal === undefined || value.floor <= value.floorsTotal, {
     message: 'admin.errors.floorAboveTotal',
     path: ['floor'],

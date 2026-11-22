@@ -54,6 +54,7 @@ Nothing agency-specific should be hardcoded in a component.
 - [Deploying](docs/deploying.md) (Vercel + Neon + R2, or Docker Compose + Caddy)
 - [Adding a property type](docs/adding-a-property-type.md)
 - [Adding a locale](docs/adding-a-locale.md)
+- [Price on request](docs/price-on-request.md)
 - [Security](docs/security.md)
 - [Backups](docs/backups.md)
 

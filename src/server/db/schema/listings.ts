@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   doublePrecision,
   index,
@@ -56,13 +57,29 @@ export const listings = pgTable(
     propertyKind: propertyKindEnum('property_kind').notNull(),
     status: listingStatusEnum('status').notNull().default('draft'),
 
-    price: numeric('price', { precision: 12, scale: 2, mode: 'number' }).notNull(),
+    /**
+     * The asking price. Optional: an agency may list "price on request" and
+     * never enter one. When `showPrice` is off, the stored amount stays here so
+     * re-enabling it restores the old price, but it never leaves the server.
+     */
+    price: numeric('price', { precision: 12, scale: 2, mode: 'number' }),
     currency: currencyEnum('currency').notNull().default('EUR'),
+    /** Off by default: new listings are "price on request" until an agent opts in. */
+    showPrice: boolean('show_price').notNull().default(false),
+
+    /*
+     * Public price columns.
+     *
+     * Every column below is what search filters and sorts on, so each one is
+     * null (or a sentinel) when the price is hidden. If they were derived from
+     * `price` alone, a visitor could recover a hidden price by narrowing the
+     * price filter, or read its rank from the sort order.
+     */
 
     /** Normalised price so mixed-currency listings sort correctly. */
     priceEur: numeric('price_eur', { precision: 12, scale: 2, mode: 'number' }).generatedAlwaysAs(
       (): ReturnType<typeof sql> =>
-        sql`(case when ${listings.currency} = 'EUR' then ${listings.price} else round(${listings.price} / ${BGN_PER_EUR}, 2) end)`,
+        sql`(case when ${listings.showPrice} then (case when ${listings.currency} = 'EUR' then ${listings.price} else round(${listings.price} / ${BGN_PER_EUR}, 2) end) end)`,
     ),
 
     area: numeric('area', { precision: 10, scale: 2, mode: 'number' }),
@@ -71,7 +88,8 @@ export const listings = pgTable(
     /**
      * Derived from the base columns rather than from `price_eur`, because
      * Postgres forbids a generated column referencing another generated column.
-     * Null when the listing has no measurable area, so the UI can hide the field.
+     * Null when the listing has no measurable area or a hidden price, so the UI
+     * can hide the field.
      */
     pricePerSqmEur: numeric('price_per_sqm_eur', {
       precision: 12,
@@ -79,7 +97,7 @@ export const listings = pgTable(
       mode: 'number',
     }).generatedAlwaysAs(
       (): ReturnType<typeof sql> =>
-        sql`(case when coalesce(${listings.area}, ${listings.landArea}) > 0 then round((case when ${listings.currency} = 'EUR' then ${listings.price} else ${listings.price} / ${BGN_PER_EUR} end) / coalesce(${listings.area}, ${listings.landArea}), 2) end)`,
+        sql`(case when ${listings.showPrice} and coalesce(${listings.area}, ${listings.landArea}) > 0 then round((case when ${listings.currency} = 'EUR' then ${listings.price} else ${listings.price} / ${BGN_PER_EUR} end) / coalesce(${listings.area}, ${listings.landArea}), 2) end)`,
     ),
 
     /*
@@ -87,9 +105,10 @@ export const listings = pgTable(
      *
      * Keyset pagination compares a row against the last row of the previous
      * page. That comparison is only sound — and only index-friendly — when the
-     * sort key can never be null, so these two columns collapse "indoor area or
-     * plot area" into one value and give area-less listings a sentinel that
-     * parks them at the end of an ascending price-per-m² sort.
+     * sort key can never be null, so these columns collapse "indoor area or
+     * plot area" into one value and give listings without a value a sentinel
+     * that parks them at the end of the sort. Price gets one key per direction
+     * because a single sentinel can only sit at one end.
      */
     sortArea: numeric('sort_area', { precision: 12, scale: 2, mode: 'number' })
       .notNull()
@@ -98,11 +117,25 @@ export const listings = pgTable(
           sql`coalesce(${listings.area}, ${listings.landArea}, 0)`,
       ),
 
+    sortPriceAsc: numeric('sort_price_asc', { precision: 12, scale: 2, mode: 'number' })
+      .notNull()
+      .generatedAlwaysAs(
+        (): ReturnType<typeof sql> =>
+          sql`(case when ${listings.showPrice} then (case when ${listings.currency} = 'EUR' then ${listings.price} else round(${listings.price} / ${BGN_PER_EUR}, 2) end) else 999999999 end)`,
+      ),
+
+    sortPriceDesc: numeric('sort_price_desc', { precision: 12, scale: 2, mode: 'number' })
+      .notNull()
+      .generatedAlwaysAs(
+        (): ReturnType<typeof sql> =>
+          sql`(case when ${listings.showPrice} then (case when ${listings.currency} = 'EUR' then ${listings.price} else round(${listings.price} / ${BGN_PER_EUR}, 2) end) else -1 end)`,
+      ),
+
     sortPricePerSqm: numeric('sort_price_per_sqm', { precision: 12, scale: 2, mode: 'number' })
       .notNull()
       .generatedAlwaysAs(
         (): ReturnType<typeof sql> =>
-          sql`(case when coalesce(${listings.area}, ${listings.landArea}) > 0 then round((case when ${listings.currency} = 'EUR' then ${listings.price} else ${listings.price} / ${BGN_PER_EUR} end) / coalesce(${listings.area}, ${listings.landArea}), 2) else 999999999 end)`,
+          sql`(case when ${listings.showPrice} and coalesce(${listings.area}, ${listings.landArea}) > 0 then round((case when ${listings.currency} = 'EUR' then ${listings.price} else ${listings.price} / ${BGN_PER_EUR} end) / coalesce(${listings.area}, ${listings.landArea}), 2) else 999999999 end)`,
       ),
 
     rooms: integer('rooms'),
@@ -169,7 +202,18 @@ export const listings = pgTable(
       table.priceEur,
     ),
 
-    index('listings_price_sort_idx').on(table.status, table.dealType, table.priceEur, table.id),
+    index('listings_price_asc_sort_idx').on(
+      table.status,
+      table.dealType,
+      table.sortPriceAsc,
+      table.id,
+    ),
+    index('listings_price_desc_sort_idx').on(
+      table.status,
+      table.dealType,
+      sql`${table.sortPriceDesc} desc`,
+      sql`${table.id} desc`,
+    ),
     index('listings_area_sort_idx').on(
       table.status,
       table.dealType,
@@ -189,6 +233,9 @@ export const listings = pgTable(
       .on(sql`${table.publishedAt} desc`)
       .where(sql`${table.isFeatured} and ${table.status} = 'active'`),
     index('listings_admin_idx').on(table.status, sql`${table.updatedAt} desc`),
+
+    // A price can be hidden without one, but never shown without one.
+    check('listings_shown_price_present', sql`not ${table.showPrice} or ${table.price} is not null`),
   ],
 );
 
