@@ -16,9 +16,13 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
 };
 
 /**
- * `siteConfig.favicon` as a data URI, read once when the module loads — the
- * icon is generated at build time, so this never touches the disk per request.
- * A wrong path or format fails the build with a message naming the setting.
+ * `siteConfig.favicon` as a data URI. A wrong path or format fails the build
+ * with a message naming the setting, since `/icon` is prerendered.
+ *
+ * Only `Icon()` may call this, never module scope: Next imports this module
+ * into every page's server bundle to emit `<link rel="icon">`, and serverless
+ * hosts such as Vercel serve `public/` from the CDN without copying it into
+ * functions — a module-level read throws on every page there.
  */
 async function loadFavicon(publicPath: string): Promise<string> {
   const mime = MIME_BY_EXTENSION[extname(publicPath).toLowerCase()];
@@ -38,10 +42,9 @@ async function loadFavicon(publicPath: string): Promise<string> {
   return `data:${mime};base64,${data.toString('base64')}`;
 }
 
-const faviconSrc = siteConfig.favicon ? await loadFavicon(siteConfig.favicon) : null;
-
-export default function Icon() {
-  if (faviconSrc) {
+export default async function Icon() {
+  if (siteConfig.favicon) {
+    const faviconSrc = await loadFavicon(siteConfig.favicon);
     return new ImageResponse(
       (
         <div style={{ display: 'flex', width: '100%', height: '100%' }}>
