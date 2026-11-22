@@ -19,6 +19,8 @@ export const cacheTags = {
   facets: 'facets',
   /** Locations and features — edited rarely, read on every page. */
   taxonomy: 'taxonomy',
+  /** Runtime settings from the admin console (e.g. whether submissions are open). */
+  settings: 'settings',
 } as const;
 
 export const cacheTtl = {
@@ -26,6 +28,7 @@ export const cacheTtl = {
   detail: 900,
   facets: 600,
   taxonomy: 3600,
+  settings: 3600,
 } as const;
 
 type CacheOptions = {
@@ -65,4 +68,8 @@ export function revalidateListingCaches(listingId?: string): void {
 
 export function revalidateTaxonomyCaches(): void {
   revalidateTag(cacheTags.taxonomy, IMMEDIATE);
+}
+
+export function revalidateSettingsCaches(): void {
+  revalidateTag(cacheTags.settings, IMMEDIATE);
 }

@@ -7,3 +7,5 @@ export * from './media';
 export * from './inquiries';
 export * from './auth';
 export * from './audit';
+export * from './submissions';
+export * from './settings';

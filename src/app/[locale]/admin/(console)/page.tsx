@@ -13,17 +13,19 @@ import {
   sumRecentViews,
 } from '@/server/repositories/admin-listings';
 import { listInquiries } from '@/server/repositories/inquiries';
+import { listSubmissions } from '@/server/repositories/submissions';
 
 export default async function AdminDashboard({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
 
-  const [t, tEnum, statuses, views, recent, inquiries] = await Promise.all([
+  const [t, tEnum, statuses, views, recent, inquiries, submissions] = await Promise.all([
     getTranslations('admin'),
     getTranslations('enums'),
     countListingsByStatus(),
     sumRecentViews(),
     listAdminListings(locale, { limit: 6 }),
     listInquiries({ statuses: ['new'], limit: 5 }),
+    listSubmissions({ locale, statuses: ['pending'], limit: 5 }),
   ]);
 
   const stats = [
@@ -97,6 +99,41 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
           ))}
         </ul>
       </section>
+
+      {submissions.length > 0 ? (
+        <section className="rounded-card border border-line bg-surface">
+          <header className="flex items-center justify-between border-b border-line p-5">
+            <h2 className="font-semibold text-ink">{t('submissions.awaitingReview')}</h2>
+            <Link href={adminPath(locale, 'submissions')} className="text-sm text-brand hover:underline">
+              {t('submissions.nav')}
+            </Link>
+          </header>
+          <ul className="divide-y divide-line">
+            {submissions.map((submission) => (
+              <li key={submission.id}>
+                <Link
+                  href={adminPath(locale, `submissions/${submission.id}`)}
+                  className="flex flex-wrap items-center gap-3 p-4 transition-colors hover:bg-surface-muted"
+                >
+                  <span className="font-mono text-xs text-ink-subtle">#{submission.reference}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                    {submission.propertyKind ? tEnum(`propertyKind.${submission.propertyKind}`) : '—'}
+                    {submission.locationName || submission.locationText
+                      ? `, ${submission.locationName ?? submission.locationText}`
+                      : ''}
+                  </span>
+                  <span className="text-sm text-ink-muted">
+                    {submission.firstName} {submission.lastName}
+                  </span>
+                  {submission.submittedAt ? (
+                    <span className="text-xs text-ink-subtle">{formatDate(locale, submission.submittedAt)}</span>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="rounded-card border border-line bg-surface">
         <header className="flex items-center justify-between border-b border-line p-5">

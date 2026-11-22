@@ -1,6 +1,7 @@
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -16,8 +17,9 @@ const UPLOAD_URL_TTL_SECONDS = 600;
  * R2 is the intended production target because it charges nothing for egress,
  * which matters a great deal for a site whose payload is mostly photographs.
  */
-export function createS3Storage(): StorageAdapter {
-  const bucket = serverEnv.S3_BUCKET;
+export function createS3Storage(
+  bucket: string | undefined = serverEnv.S3_BUCKET,
+): StorageAdapter {
   if (!bucket)
     throw new Error('S3_BUCKET is required when STORAGE_DRIVER is "s3".');
 
@@ -37,6 +39,21 @@ export function createS3Storage(): StorageAdapter {
           }
         : undefined,
   });
+
+  async function removeKeys(keys: readonly string[]): Promise<void> {
+    if (keys.length === 0) return;
+
+    // DeleteObjects accepts at most 1000 keys per call.
+    for (let index = 0; index < keys.length; index += 1000) {
+      const batch = keys.slice(index, index + 1000);
+      await client.send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+        }),
+      );
+    }
+  }
 
   return {
     name: "s3",
@@ -66,28 +83,41 @@ export function createS3Storage(): StorageAdapter {
       return Buffer.from(bytes);
     },
 
-    async remove(keys) {
-      if (keys.length === 0) return;
+    remove: removeKeys,
 
-      // DeleteObjects accepts at most 1000 keys per call.
-      for (let index = 0; index < keys.length; index += 1000) {
-        const batch = keys.slice(index, index + 1000);
-        await client.send(
-          new DeleteObjectsCommand({
+    async removePrefix(prefix) {
+      // Never the whole bucket, whatever prefix a caller computes.
+      if (!prefix || prefix === "/") {
+        throw new Error("Refusing to remove the whole bucket.");
+      }
+      let continuationToken: string | undefined;
+      do {
+        const page = await client.send(
+          new ListObjectsV2Command({
             Bucket: bucket,
-            Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+            Prefix: prefix,
+            ContinuationToken: continuationToken,
           }),
         );
-      }
+        const keys = (page.Contents ?? [])
+          .map((object) => object.Key)
+          .filter((key): key is string => Boolean(key));
+        await removeKeys(keys);
+        continuationToken = page.IsTruncated
+          ? page.NextContinuationToken
+          : undefined;
+      } while (continuationToken);
     },
 
-    async createUploadUrl(key, contentType): Promise<PresignedUpload> {
+    async createUploadUrl(key, contentType, options): Promise<PresignedUpload> {
       const url = await getSignedUrl(
         client,
         new PutObjectCommand({
           Bucket: bucket,
           Key: key,
           ContentType: contentType,
+          // Becomes a signed header: a PUT of any other size fails SigV4.
+          ...(options?.contentLength ? { ContentLength: options.contentLength } : {}),
         }),
         { expiresIn: UPLOAD_URL_TTL_SECONDS },
       );

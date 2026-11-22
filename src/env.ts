@@ -32,6 +32,14 @@ const serverSchema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_FORCE_PATH_STYLE: z.stringbool().default(false),
   LOCAL_STORAGE_DIR: z.string().default(".storage"),
+  /**
+   * Bucket for files nobody has reviewed yet (photos sent with a property
+   * submission). Must NOT be publicly readable. Same endpoint and credentials
+   * as `S3_BUCKET`. Without it, the s3 driver keeps submissions switched off.
+   */
+  S3_PRIVATE_BUCKET: z.string().optional(),
+  /** Local equivalent of the private bucket. Never served by `/media`. */
+  LOCAL_PRIVATE_STORAGE_DIR: z.string().default(".storage-private"),
 
   MAIL_DRIVER: z.enum(["resend", "console"]).default("console"),
   RESEND_API_KEY: z.string().optional(),
@@ -60,6 +68,19 @@ const serverSchema = z.object({
     .default("dev-only-preview-secret-change"),
 
   SENTRY_DSN: z.string().optional(),
+
+  /**
+   * Cloudflare Turnstile secret, paired with NEXT_PUBLIC_TURNSTILE_SITE_KEY.
+   * When both are set, the property submission form requires a passed
+   * challenge. Works for any domain; DNS does not need to be on Cloudflare.
+   */
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+
+  /**
+   * Shared secret for scheduled jobs (`/api/cron/*`). Vercel Cron sends it as
+   * `Authorization: Bearer <CRON_SECRET>` automatically once it is set.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 const clientSchema = z.object({
@@ -69,6 +90,7 @@ const clientSchema = z.object({
     .url()
     .default("https://tiles.openfreemap.org/styles/bright"),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 });
 
 const clientValues = {
@@ -76,6 +98,7 @@ const clientValues = {
   NEXT_PUBLIC_MEDIA_BASE_URL: process.env.NEXT_PUBLIC_MEDIA_BASE_URL,
   NEXT_PUBLIC_MAP_STYLE_URL: process.env.NEXT_PUBLIC_MAP_STYLE_URL,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
 };
 
 function stripEmpty<T extends Record<string, unknown>>(values: T): Partial<T> {

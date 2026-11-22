@@ -3,6 +3,7 @@ node_modules
 .git
 .backups
 .storage
+.storage-private
 .pgdata
 .pgsock
 .tmp

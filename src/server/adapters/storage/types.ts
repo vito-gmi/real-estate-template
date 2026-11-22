@@ -24,10 +24,26 @@ export interface StorageAdapter {
   get(key: string): Promise<Buffer>;
   remove(keys: readonly string[]): Promise<void>;
   /**
+   * Deletes every object under a prefix (e.g. `submissions/<id>/`), including
+   * ones no database row points at, such as an upload abandoned mid-way.
+   */
+  removePrefix(prefix: string): Promise<void>;
+  /**
    * Lets the browser upload straight to the bucket. Keeping bytes out of the
    * application server is what makes uploads cheap on serverless hosting.
    */
-  createUploadUrl(key: string, contentType: string): Promise<PresignedUpload>;
+  createUploadUrl(
+    key: string,
+    contentType: string,
+    options?: {
+      /**
+       * Signs the exact byte length into the URL, so the bucket rejects any
+       * other size. Used for uploads from the public, where nothing else
+       * stands between a stranger and the bucket.
+       */
+      readonly contentLength?: number;
+    },
+  ): Promise<PresignedUpload>;
   /** Public, CDN-facing URL for a stored object. */
   publicUrl(key: string): string;
 }

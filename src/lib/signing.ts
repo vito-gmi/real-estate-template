@@ -4,20 +4,34 @@ import { serverEnv } from '@/env';
 /**
  * Short-lived signed tokens.
  *
- * Used for two things that must be capability-based rather than session-based:
- * local upload URLs (so the endpoint cannot be used to write arbitrary paths)
- * and draft-preview links (so an agent can show an unpublished listing to an
- * owner who has no account).
+ * Used for things that must be capability-based rather than session-based:
+ * local upload URLs (so the endpoint cannot be used to write arbitrary paths),
+ * draft-preview links (so an agent can show an unpublished listing to an
+ * owner who has no account), and the handle a visitor holds on the property
+ * submission they are filling in.
  *
  * The payload is visible but not forgeable, and every token carries an expiry.
  */
 
-export type SignedPurpose = 'upload' | 'preview';
+export type SignedPurpose = 'upload' | 'preview' | 'submission';
 
 const SECRETS: Record<SignedPurpose, () => string> = {
   upload: () => serverEnv.AUTH_SECRET,
   preview: () => serverEnv.PREVIEW_TOKEN_SECRET,
+  // Lets an anonymous visitor keep adding photos to the submission they
+  // started, and nothing else. The purpose is part of the MAC, so this token
+  // is useless as an upload or preview token even with the same secret.
+  submission: () => serverEnv.AUTH_SECRET,
 };
+
+/**
+ * What a local-driver upload token is bound to. Public keys sign as the bare
+ * key (unchanged, so existing tokens stay valid); private keys carry a prefix,
+ * so a token for the public directory cannot write into the private one.
+ */
+export function localUploadSubject(bucket: 'public' | 'private', key: string): string {
+  return bucket === 'private' ? `private:${key}` : key;
+}
 
 function sign(purpose: SignedPurpose, payload: string): string {
   return createHmac('sha256', SECRETS[purpose]()).update(`${purpose}:${payload}`).digest('base64url');

@@ -1,8 +1,10 @@
-import { Clock, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowRight, Clock, KeyRound, Mail, MapPin, Phone } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { siteConfig } from '@/config/site';
 import { InquiryForm } from '@/features/inquiries/components/inquiry-form';
+import { getPublicSubmissionAvailability } from '@/features/submissions/availability';
 import type { Locale } from '@/i18n/routing';
+import { staticPath } from '@/lib/routes';
 import { JsonLd, organizationJsonLd } from '@/lib/seo/json-ld';
 import { guardSegmentLocale, PageHeader } from './simple-page';
 
@@ -14,7 +16,10 @@ export async function ContactPage({
   segmentLocale: Locale;
 }) {
   const locale = await guardSegmentLocale('contact', segmentLocale, params);
-  const t = await getTranslations('contact');
+  const [t, submissions] = await Promise.all([
+    getTranslations('contact'),
+    getPublicSubmissionAvailability(),
+  ]);
 
   return (
     <>
@@ -51,6 +56,20 @@ export async function ContactPage({
               </li>
             ))}
           </ul>
+
+          {submissions.open ? (
+            <a
+              href={staticPath('submit', locale)}
+              className="mt-8 flex items-center gap-4 rounded-card border border-line bg-brand-soft p-5 transition-colors hover:border-brand"
+            >
+              <KeyRound className="size-6 shrink-0 text-brand" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-ink">{t('ownerTitle')}</span>
+                <span className="mt-0.5 block text-sm text-ink-muted">{t('ownerText')}</span>
+              </span>
+              <ArrowRight className="size-5 shrink-0 text-brand" aria-hidden="true" />
+            </a>
+          ) : null}
         </div>
 
         <div className="rounded-card border border-line bg-surface p-6">

@@ -36,6 +36,7 @@ services:
         NEXT_PUBLIC_MEDIA_BASE_URL: ${NEXT_PUBLIC_MEDIA_BASE_URL:-/media}
         NEXT_PUBLIC_MAP_STYLE_URL: ${NEXT_PUBLIC_MAP_STYLE_URL:-}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -50,13 +51,19 @@ services:
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       LOCAL_STORAGE_DIR: /data/storage
+      # Unreviewed property-submission photos. Not served publicly.
+      LOCAL_PRIVATE_STORAGE_DIR: /data/private
       MAIL_DRIVER: ${MAIL_DRIVER:-console}
+      MAIL_TO: ${MAIL_TO:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      CRON_SECRET: ${CRON_SECRET:-}
       IP_HASH_SALT: ${IP_HASH_SALT:-}
       PREVIEW_TOKEN_SECRET: ${PREVIEW_TOKEN_SECRET:-}
       # Caddy overwrites X-Real-IP on every request (see Caddyfile).
       CLIENT_IP_HEADER: x-real-ip
     volumes:
       - estate-media:/data/storage
+      - estate-private:/data/private
     expose:
       - '3000'
     ports:
@@ -83,5 +90,6 @@ services:
 volumes:
   estate-pgdata:
   estate-media:
+  estate-private:
   estate-caddy-data:
   estate-caddy-config:

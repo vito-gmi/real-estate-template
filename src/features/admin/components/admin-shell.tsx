@@ -4,15 +4,18 @@ import {
   ExternalLink,
   FolderTree,
   Inbox,
+  KeyRound,
   LayoutDashboard,
   ScrollText,
+  Settings,
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { BrandLogo } from '@/components/layout/brand-logo';
 import { siteConfig } from '@/config/site';
 import type { Locale } from '@/i18n/routing';
 import { adminPath, homePath } from '@/lib/routes';
-import type { StaffUser } from '@/server/auth/session';
+import { hasRole, type StaffUser } from '@/server/auth/session';
+import { countSubmissionsByStatus } from '@/server/repositories/submissions';
 import { SignOutButton } from './sign-out-button';
 
 /**
@@ -30,14 +33,26 @@ export async function AdminShell({
   user: StaffUser;
   children: React.ReactNode;
 }) {
-  const t = await getTranslations('admin');
+  const [t, pendingSubmissions] = await Promise.all([
+    getTranslations('admin'),
+    countSubmissionsByStatus('pending'),
+  ]);
 
-  const nav = [
+  const nav: { href: string; label: string; icon: typeof Building2; count?: number }[] = [
     { href: adminPath(locale), label: t('dashboard'), icon: LayoutDashboard },
     { href: adminPath(locale, 'listings'), label: t('listings'), icon: Building2 },
+    {
+      href: adminPath(locale, 'submissions'),
+      label: t('submissions.nav'),
+      icon: KeyRound,
+      count: pendingSubmissions,
+    },
     { href: adminPath(locale, 'inquiries'), label: t('inquiries'), icon: Inbox },
     { href: adminPath(locale, 'taxonomy'), label: t('taxonomy.title'), icon: FolderTree },
     { href: adminPath(locale, 'audit'), label: t('auditLog'), icon: ScrollText },
+    ...(hasRole(user, 'admin')
+      ? [{ href: adminPath(locale, 'settings'), label: t('settings'), icon: Settings }]
+      : []),
   ];
 
   return (
@@ -81,6 +96,12 @@ export async function AdminShell({
                 >
                   <item.icon className="size-4" />
                   {item.label}
+                  {item.count ? (
+                    <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-ink">
+                      {item.count}
+                      <span className="sr-only"> {t('submissions.pendingCount')}</span>
+                    </span>
+                  ) : null}
                 </Link>
               </li>
             ))}
@@ -94,15 +115,21 @@ export async function AdminShell({
         aria-label={t('title')}
         className="sticky bottom-0 border-t border-line bg-surface lg:hidden"
       >
-        <ul className="mx-auto flex max-w-7xl">
+        {/* Scrolls sideways on narrow phones rather than squeezing labels. */}
+        <ul className="mx-auto flex max-w-7xl overflow-x-auto">
           {nav.map((item) => (
-            <li key={item.href} className="flex-1">
+            <li key={item.href} className="min-w-[4.75rem] flex-1">
               <Link
                 href={item.href}
-                className="flex flex-col items-center gap-1 py-2.5 text-xs text-ink-muted"
+                className="relative flex flex-col items-center gap-1 px-1 py-2.5 text-center text-xs text-ink-muted"
               >
                 <item.icon className="size-5" />
                 {item.label}
+                {item.count ? (
+                  <span className="absolute right-2 top-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold leading-4 text-ink">
+                    {item.count}
+                  </span>
+                ) : null}
               </Link>
             </li>
           ))}

@@ -20,6 +20,10 @@ blob-report/
 .env.*
 !.env.example
 
+# Local upload directories (public media and unreviewed submission photos).
+.storage/
+.storage-private/
+
 .DS_Store
 *.pem
 npm-debug.log*

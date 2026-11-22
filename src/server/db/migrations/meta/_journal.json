@@ -36,6 +36,13 @@
       "when": 1795344003251,
       "tag": "0004_optional_price",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795353064515,
+      "tag": "0005_property_submissions",
+      "breakpoints": true
     }
   ]
 }

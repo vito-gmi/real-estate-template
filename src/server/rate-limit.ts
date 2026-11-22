@@ -27,7 +27,11 @@ export type LimiterName =
   | 'login:ip'
   | 'login:account'
   | 'search:ip'
-  | 'upload:user';
+  | 'upload:user'
+  | 'submission:start'
+  | 'submission:upload'
+  | 'submission:ip'
+  | 'submission:email';
 
 /** Window and quota per protected operation, in one table. */
 const POLICIES: Record<LimiterName, { limit: number; windowSeconds: number }> = {
@@ -40,6 +44,13 @@ const POLICIES: Record<LimiterName, { limit: number; windowSeconds: number }> = 
   'login:account': { limit: 5, windowSeconds: 900 },
   'search:ip': { limit: 120, windowSeconds: 60 },
   'upload:user': { limit: 120, windowSeconds: 3600 },
+  // Property submissions from the public. Starting one and uploading photos is
+  // bounded per address (a full submission is at most 30 photos, so 120 an
+  // hour leaves room for retries); actually submitting is a few a day.
+  'submission:start': { limit: 10, windowSeconds: 3600 },
+  'submission:upload': { limit: 120, windowSeconds: 3600 },
+  'submission:ip': { limit: 5, windowSeconds: 86_400 },
+  'submission:email': { limit: 3, windowSeconds: 86_400 },
 };
 
 const redis =

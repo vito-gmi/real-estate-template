@@ -9,6 +9,7 @@ import {
   listingStatuses,
   propertyKinds,
 } from '@/lib/domain/enums';
+import { optionalNumber, optionalText } from '@/lib/form-fields';
 
 /**
  * The listing form contract.
@@ -18,21 +19,6 @@ import {
  * form without existing here, which is what keeps client and server honest about
  * what a valid listing is.
  */
-
-const optionalNumber = z
-  .union([z.number(), z.string()])
-  .optional()
-  .transform((value) => {
-    if (value === undefined || value === '') return undefined;
-    const parsed = typeof value === 'number' ? value : Number(String(value).replace(/\s/g, ''));
-    return Number.isFinite(parsed) ? parsed : undefined;
-  });
-
-const optionalText = z
-  .string()
-  .trim()
-  .optional()
-  .transform((value) => (value === '' ? undefined : value));
 
 export const listingFormSchema = z
   .object({

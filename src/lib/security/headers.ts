@@ -37,6 +37,15 @@ function mediaOrigin(): string | null {
   return new URL(base).origin;
 }
 
+/**
+ * Cloudflare Turnstile serves its script and challenge iframe from this
+ * origin. Allowed only when a site key is configured, so a fork that never
+ * uses it keeps the narrower policy.
+ */
+function turnstileOrigins(): string[] {
+  return clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? ["https://challenges.cloudflare.com"] : [];
+}
+
 function mapOrigin(): string {
   return new URL(clientEnv.NEXT_PUBLIC_MAP_STYLE_URL).origin;
 }
@@ -85,11 +94,12 @@ export function buildCsp(profile: CspProfile, nonce?: string): string {
   const media = mediaOrigin();
   const map = mapOrigin();
   const uploadOrigins = storageUploadOrigins();
+  const turnstile = turnstileOrigins();
 
   const scriptSrc =
     profile === "nonce" && nonce
       ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"]
-      : ["'self'", "'unsafe-inline'"];
+      : ["'self'", "'unsafe-inline'", ...turnstile];
 
   if (isDev) {
     // React reconstructs server stack traces in the browser using eval.
@@ -120,10 +130,12 @@ export function buildCsp(profile: CspProfile, nonce?: string): string {
       "https://*.sentry.io",
       ...(media ? [media] : []),
       ...uploadOrigins,
+      ...turnstile,
     ],
     "worker-src": ["'self'", "blob:"],
     "frame-src": [
       "'self'",
+      ...turnstile,
       "https://www.youtube-nocookie.com",
       "https://player.vimeo.com",
     ],

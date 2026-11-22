@@ -9,7 +9,8 @@ A production-ready, bilingual (Bulgarian / English) real-estate listings platfor
 - Listings for sale and rent across apartments, houses, land, offices and the rest of the Bulgarian market vocabulary
 - Faceted search with keyset pagination, bilingual URLs, map pin, mortgage calculator, similar listings
 - Anonymous, device-local favourites, compare view, shareable encoded-ID links
-- Admin console: Argon2id + mandatory TOTP, listing CRUD, drag-and-drop R2 uploads with precomputed AVIF/WebP derivatives, inquiry inbox, taxonomy, audit log, CSV/JSON import/export, draft preview links
+- Admin console: Argon2id + mandatory TOTP, listing CRUD, drag-and-drop R2 uploads with precomputed AVIF/WebP derivatives, inquiry inbox, taxonomy, audit log, CSV/JSON import/export, draft preview links, runtime settings
+- "List your property": owners submit properties with photos through a public form; staff review and turn them into draft listings
 - SEO: `hreflang`, JSON-LD (`RealEstateListing` / `Offer` / `BreadcrumbList`), split sitemaps, RSS, OG images
 - Designed to stay flat from 5 to 50,000 listings
 
@@ -55,6 +56,7 @@ Nothing agency-specific should be hardcoded in a component.
 - [Adding a property type](docs/adding-a-property-type.md)
 - [Adding a locale](docs/adding-a-locale.md)
 - [Price on request](docs/price-on-request.md)
+- [Property submissions](docs/property-submissions.md) (private R2 bucket, Turnstile, cleanup job)
 - [Security](docs/security.md)
 - [Backups](docs/backups.md)
 

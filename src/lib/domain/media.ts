@@ -43,3 +43,15 @@ export type AcceptedImageType = (typeof ACCEPTED_IMAGE_TYPES)[number];
 export function isAcceptedImageType(value: string): value is AcceptedImageType {
   return (ACCEPTED_IMAGE_TYPES as readonly string[]).includes(value);
 }
+
+/**
+ * Photos sent with a visitor's property submission.
+ *
+ * The browser shrinks each photo to `SUBMISSION_PHOTO_MAX_EDGE` before upload,
+ * so the server-side byte cap only matters when that step is unavailable.
+ * The shorter-edge floor rejects thumbnails and screenshots of thumbnails,
+ * which would look broken in the listing gallery.
+ */
+export const MAX_SUBMISSION_PHOTOS = 30;
+export const SUBMISSION_PHOTO_MAX_EDGE = 2560;
+export const SUBMISSION_PHOTO_MIN_EDGE = 600;
